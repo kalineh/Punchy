@@ -24,8 +24,10 @@ public class FistTarget
         if (!fist)
             return;
 
+        fist.OnHit();
+
         material.DOKill();
-        material.DOColor(Color.red, 0.2f);
-        material.DOColor(Color.white, 0.2f).SetDelay(0.2f);
+        material.DOColor(Color.red, 0.1f);
+        material.DOColor(Color.white, 0.1f).SetDelay(0.1f);
     }
 }
