@@ -1,6 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
+
+// find better spawn pos (least colliders)
+// snipping: trigger until sphere has no colliders then solid
+// falling: leafy sound on trigger enter
 
 public class BonsaiBranch
     : MonoBehaviour
@@ -47,7 +52,9 @@ public class BonsaiBranch
         var obj = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity) as GameObject;
         var ofs = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, 1.25f, 0.0f);
         var closest = leafCollider.ClosestPointOnBounds(ofs);
-        var scale = 1.0f - depth * 0.075f;
+        var scale = 1.0f - depth * 0.125f;
+
+        scale *= Random.Range(0.8f, 1.2f);
 
         obj.transform.SetParent(branches.transform);
         obj.transform.position = closest;
@@ -64,6 +71,16 @@ public class BonsaiBranch
 
     public IEnumerator DoGrow()
     {
+        var targetScale = transform.localScale;
+
+        transform.localScale = Vector3.zero;
+
+        var shake = transform.DOShakePosition(1.5f, 0.015f);
+        yield return transform.DOScale(targetScale, depth * 5.0f).WaitForCompletion();
+        shake.Kill();
+
+        transform.DOShakePosition(0.5f, 0.01f);
+
         yield return new WaitForSeconds(Random.Range(1.0f, 5.0f) * depth);
 
         while (true)
