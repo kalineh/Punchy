@@ -40,6 +40,35 @@ public class BonsaiBranch
         leafRenderer = leaf.GetComponent<Renderer>();
 
         StartCoroutine(DoGrow());
+        StartCoroutine(DoDebugInput());
+    }
+
+    public Vector3 FindBestGrowDir()
+    {
+        var pos = transform.position + transform.up * 0.5f;
+        var samples = 12;
+        var bestDir = Vector3.up;
+        var bestCount = 1000;
+
+        for (int i = 0; i < samples; ++i)
+        {
+            var dir = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, 1.25f, 0.0f);
+            var ofs = dir * 0.5f;
+            var closest = leafCollider.ClosestPointOnBounds(ofs);
+            var collisions = Physics.OverlapSphere(pos + ofs, 0.10f);
+            var count = collisions.Length;
+
+            //Debug.DrawLine(pos, pos + ofs, Color.Lerp(Color.white, Color.blue, Mathf.Clamp01(count * 0.2f)), 1.0f);
+
+            if (count < bestCount)
+            {
+                //Debug.DrawLine(pos, pos + ofs, Color.red, 1.0f);
+                bestDir = dir;
+                bestCount = count;
+            }
+        }
+
+        return bestDir;
     }
 
     public GameObject MakeBranch()
@@ -50,15 +79,16 @@ public class BonsaiBranch
 
         var prefab = Resources.Load<GameObject>("BonsaiBranch");
         var obj = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity) as GameObject;
-        var ofs = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, 1.25f, 0.0f);
-        var closest = leafCollider.ClosestPointOnBounds(ofs);
+        var bestLocal = FindBestGrowDir();
+        // TODO: is worldspace? is localspace?
+        var closest = leafCollider.ClosestPointOnBounds(bestLocal);
         var scale = 1.0f - depth * 0.125f;
 
         scale *= Random.Range(0.8f, 1.2f);
 
         obj.transform.SetParent(branches.transform);
         obj.transform.position = closest;
-        obj.transform.localRotation = Quaternion.LookRotation(ofs.normalized);
+        obj.transform.localRotation = Quaternion.LookRotation(bestLocal.normalized);
         obj.transform.localScale = Vector3.one * scale;
 
         var bonsai = obj.GetComponent<BonsaiBranch>();
@@ -91,6 +121,17 @@ public class BonsaiBranch
             yield return new WaitForSeconds(depthDelay + grownDelay);
 
             MakeBranch();
+
+            yield return null;
+        }
+    }
+
+    public IEnumerator DoDebugInput()
+    {
+        while (true)
+        {
+            if (Input.GetKeyDown(KeyCode.M))
+                MakeBranch();
 
             yield return null;
         }
