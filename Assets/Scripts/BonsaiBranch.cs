@@ -14,6 +14,9 @@ public class BonsaiBranch
     private GameObject stalk;
     private GameObject leaf;
 
+    private Rigidbody stalkRigidbody;
+    private Rigidbody leafRigidbody;
+
     private Collider stalkCollider;
     private Collider leafCollider;
 
@@ -33,11 +36,17 @@ public class BonsaiBranch
         stalk = transform.FindChild("Stalk").gameObject;
         leaf = transform.FindChild("Leaf").gameObject;
 
+        stalkRigidbody = stalk.GetComponent<Rigidbody>();
+        leafRigidbody = leaf.GetComponent<Rigidbody>();
+
         stalkCollider = stalk.GetComponent<Collider>();
         leafCollider = leaf.GetComponent<Collider>();
 
         stalkRenderer = stalk.GetComponent<Renderer>();
         leafRenderer = leaf.GetComponent<Renderer>();
+
+        Physics.IgnoreCollision(stalkCollider, leafCollider);
+        //Physics.IgnoreCollision(stalkCollider, transform.parent.parent.FindChild("Leaf").GetComponent<Collider>());
 
         StartCoroutine(DoGrow());
         StartCoroutine(DoDebugInput());
@@ -110,6 +119,12 @@ public class BonsaiBranch
         shake.Kill();
 
         transform.DOShakePosition(0.5f, 0.01f);
+
+        if (depth > 0)
+        {
+            stalkRigidbody.isKinematic = false;
+            leafRigidbody.isKinematic = false;
+        }
 
         yield return new WaitForSeconds(Random.Range(1.0f, 5.0f) * depth);
 
