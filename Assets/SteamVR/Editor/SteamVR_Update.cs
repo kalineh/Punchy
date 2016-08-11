@@ -24,7 +24,7 @@ public class SteamVR_Update : EditorWindow
 
 	static SteamVR_Update()
 	{
-		wwwVersion = new WWW(versionUrl);
+		//wwwVersion = new WWW(versionUrl);
 		EditorApplication.update += Update;
 	}
 

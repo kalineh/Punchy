@@ -13,8 +13,6 @@ public class SimulatedHand
     private Vector3 currMouse;
     private Vector3 prevMouse;
 
-    private bool toggle = false;
-
     public void Start()
     {
         radius = 1.0f;
@@ -39,6 +37,18 @@ public class SimulatedHand
             StartCoroutine("DoInputCode");
         }
     }
+
+    // desired normal per branch
+    // branch take hit and push, oscillate lerp back to desire
+    // rainbow color puddles
+    // absorb sponge, put in leaf
+    // pulse synth from root, sound on leaves
+    // leave size = db
+    // leaf color = sound
+    // sounds merge from color merge (vol mixer)
+    // max 2 sound/color per leaf
+    // leaf type alter pulse rate (/2,*2)
+    // 
 
     public IEnumerator DoInputCode()
     {
