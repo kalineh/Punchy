@@ -4,8 +4,6 @@ using System.Collections;
 public class SimulatedHand
     : MonoBehaviour
 {
-    public GameObject hand;
-
     private float radius;
     private GameObject shadow;
 
@@ -18,8 +16,6 @@ public class SimulatedHand
 
         prevMouse = Input.mousePosition;
         currMouse = Input.mousePosition;
-
-        hand = transform.Find("Hand").gameObject;
 
         shadow = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         shadow.name = name + "Shadow";
@@ -42,6 +38,17 @@ public class SimulatedHand
             StopCoroutine("DoInputCode");
             StartCoroutine("DoInputCode");
         }
+
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            StopCoroutine("DoPullBranch");
+            StartCoroutine("DoPullBranch");
+        }
+
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            StopAllCoroutines();
+        }
     }
 
     // desired normal per branch
@@ -59,7 +66,7 @@ public class SimulatedHand
     public IEnumerator DoInputCode()
     {
         var target = Vector3.zero;
-        var body = hand.GetComponent<Rigidbody>();
+        var body = GetComponent<Rigidbody>();
         var cam = Camera.main.transform;
 
         shadow.SetActive(true);
@@ -85,6 +92,62 @@ public class SimulatedHand
 
             yield return null;
         }
+    }
+
+    public IEnumerator DoPullBranch()
+    {
+        var touching = Physics.OverlapSphere(transform.position, 2.1f);
+        var nearestLen = 10000.0f;
+        var nearestObj = (GameObject)null;
+
+        for (int i = 0; i < touching.Length; ++i)
+        {
+            var obj = touching[i];
+            if (obj.name != "Stalk")
+                continue;
+
+            var ofs = obj.transform.position - transform.position;
+            var len = ofs.magnitude;
+
+            if (len < nearestLen)
+            {
+                nearestLen = len;
+                nearestObj = obj.gameObject;
+            }
+        }
+
+        if (nearestObj == null)
+            yield break;
+
+        var pullObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+
+        pullObj.GetComponent<Collider>().enabled = false;
+        pullObj.transform.localScale = Vector3.zero;
+
+        while (true)
+        {
+            var src = nearestObj.transform.position;
+            var dst = transform.position;
+
+            var ofs = (dst - src);
+            var dir = ofs.normalized;
+            var len = ofs.magnitude;
+
+            Debug.DrawLine(src, dst);
+            Debug.LogFormat("Src: {0}, Dst: {0}", src, dst);
+
+            pullObj.transform.localScale = Vector3.one * len;
+            pullObj.transform.rotation = Quaternion.LookRotation(dir);
+
+            if (!Input.GetKey(KeyCode.F))
+                break;
+
+            yield return null;
+        }
+
+        nearestObj.GetComponentInParent<BonsaiBranch>().MakeBranch();
+
+        Destroy(pullObj);
     }
 }
 
