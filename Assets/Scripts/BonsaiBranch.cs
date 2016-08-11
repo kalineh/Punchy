@@ -50,6 +50,7 @@ public class BonsaiBranch
 
         //StartCoroutine(DoAutoGrow());
         StartCoroutine(DoDebugInput());
+        StartCoroutine(DoSway());
     }
 
     public Vector3 FindBestGrowDir()
@@ -160,6 +161,32 @@ public class BonsaiBranch
         {
             if (Input.GetKeyDown(KeyCode.M))
                 MakeBranch();
+
+            yield return null;
+        }
+    }
+
+    public IEnumerator DoSway()
+    {
+        var src = transform.localRotation;
+
+        var xs = Random.Range(0.5f, 1.0f);
+        var zs = Random.Range(0.5f, 1.0f);
+        var xm = Random.Range(10.0f, 20.0f);
+        var zm = Random.Range(10.0f, 20.0f);
+
+        while (true)
+        {
+            var rand = Quaternion.Euler(
+                Mathf.Cos(Time.time * xs) * xm,
+                0.0f,
+                Mathf.Sin(Time.time * zs) * zm
+            );
+
+            var wind = Mathf.Abs(Mathf.Sin(Time.time * 0.2f) * 15.0f);
+            var dst = Quaternion.RotateTowards(src, rand, wind);
+
+            transform.localRotation = Quaternion.Lerp(src, dst, 0.2f);
 
             yield return null;
         }
