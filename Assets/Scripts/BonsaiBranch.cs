@@ -82,22 +82,35 @@ public class BonsaiBranch
 
     public GameObject MakeBranch()
     {
+        var dir = FindBestGrowDir();
+        var src = leafCollider.ClosestPointOnBounds(transform.position + dir * (depth + 1));
+        var dst = src + dir * (depth + 1);
+
+        return MakeBranchFromTo(src, dst);
+    }
+
+    public GameObject MakeBranchFromTo(Vector3 src, Vector3 dst)
+    {
         var depthChild = depth + 1;
         if (depthChild > 20)
             return null;
 
         var prefab = Resources.Load<GameObject>("BonsaiBranch");
         var obj = GameObject.Instantiate(prefab, Vector3.zero, Quaternion.identity) as GameObject;
-        var bestLocal = FindBestGrowDir();
-        // TODO: is worldspace? is localspace?
-        var closest = leafCollider.ClosestPointOnBounds(bestLocal);
-        var scale = 1.0f - depth * 0.125f;
+        var ofs = dst - src;
+        var dir = ofs.normalized;
+        var len = ofs.magnitude;
+        var scale = 1.0f - len * 0.125f;
 
         scale *= Random.Range(0.8f, 1.2f);
 
         obj.transform.SetParent(branches.transform);
-        obj.transform.position = closest;
-        obj.transform.localRotation = Quaternion.LookRotation(bestLocal.normalized);
+        obj.transform.position = src;
+        // what are we doing
+        // we have a world space dir
+        // so we can make a worldspace rot
+
+        obj.transform.rotation = Quaternion.FromToRotation(Vector3.up, dir);
         obj.transform.localScale = Vector3.one * scale;
 
         var bonsai = obj.GetComponent<BonsaiBranch>();

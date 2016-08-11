@@ -86,7 +86,7 @@ public class SimulatedHand
             var ofs = target - body.position;
             var dir = ofs.normalized;
 
-            body.AddForce(dir * 7.5f, ForceMode.Acceleration);
+            body.AddForce(ofs * 20.0f, ForceMode.Acceleration);
 
             shadow.transform.position = target;
 
@@ -96,14 +96,14 @@ public class SimulatedHand
 
     public IEnumerator DoPullBranch()
     {
-        var touching = Physics.OverlapSphere(transform.position, 2.1f);
+        var touching = Physics.OverlapSphere(transform.position, 0.5f);
         var nearestLen = 10000.0f;
         var nearestObj = (GameObject)null;
 
         for (int i = 0; i < touching.Length; ++i)
         {
             var obj = touching[i];
-            if (obj.name != "Stalk")
+            if (obj.name != "Leaf")
                 continue;
 
             var ofs = obj.transform.position - transform.position;
@@ -119,25 +119,26 @@ public class SimulatedHand
         if (nearestObj == null)
             yield break;
 
-        var pullObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        var pullObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
         pullObj.GetComponent<Collider>().enabled = false;
         pullObj.transform.localScale = Vector3.zero;
 
+        var nearestCollider = nearestObj.GetComponent<Collider>();
+        var nearestPoint = nearestCollider.ClosestPointOnBounds(shadow.transform.position);
+
         while (true)
         {
-            var src = nearestObj.transform.position;
-            var dst = transform.position;
+            var src = nearestPoint;
+            var dst = shadow.transform.position;
 
             var ofs = (dst - src);
             var dir = ofs.normalized;
             var len = ofs.magnitude;
 
-            Debug.DrawLine(src, dst);
-            Debug.LogFormat("Src: {0}, Dst: {0}", src, dst);
-
-            pullObj.transform.localScale = Vector3.one * len;
-            pullObj.transform.rotation = Quaternion.LookRotation(dir);
+            pullObj.transform.position = src + ofs * 0.5f;
+            pullObj.transform.localScale = new Vector3(0.1f, len * 0.75f, 0.1f);
+            pullObj.transform.rotation = Quaternion.LookRotation(dir) * Quaternion.Euler(0.0f, -90.0f, 90.0f);
 
             if (!Input.GetKey(KeyCode.F))
                 break;
@@ -145,7 +146,7 @@ public class SimulatedHand
             yield return null;
         }
 
-        nearestObj.GetComponentInParent<BonsaiBranch>().MakeBranch();
+        nearestObj.GetComponentInParent<BonsaiBranch>().MakeBranchFromTo(nearestPoint, shadow.transform.position);
 
         Destroy(pullObj);
     }
