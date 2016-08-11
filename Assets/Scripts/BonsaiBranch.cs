@@ -48,7 +48,7 @@ public class BonsaiBranch
         Physics.IgnoreCollision(stalkCollider, leafCollider);
         //Physics.IgnoreCollision(stalkCollider, transform.parent.parent.FindChild("Leaf").GetComponent<Collider>());
 
-        StartCoroutine(DoGrow());
+        //StartCoroutine(DoAutoGrow());
         StartCoroutine(DoDebugInput());
     }
 
@@ -108,7 +108,7 @@ public class BonsaiBranch
         return obj;
     }
 
-    public IEnumerator DoGrow()
+    public IEnumerator DoAutoGrow()
     {
         var targetScale = transform.localScale;
 

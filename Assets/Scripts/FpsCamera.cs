@@ -28,8 +28,6 @@ public class FpsCamera
         if (Input.GetKey(KeyCode.S)) move += forward * -speed;
         if (Input.GetKey(KeyCode.D)) move += right * +speed;
 
-        Debug.Log(move);
-
         move = Vector3.Scale(move, move_rate);
 
         var rigidBody = gameObject.GetComponent<Rigidbody>();
