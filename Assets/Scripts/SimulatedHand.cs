@@ -45,10 +45,31 @@ public class SimulatedHand
             StartCoroutine("DoPullBranch");
         }
 
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            StopCoroutine("DoPunchRay");
+            StartCoroutine("DoPunchRay");
+        }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            StopCoroutine("DoCutBranch");
+            StartCoroutine("DoCutBranch");
+        }
+
         if (Input.GetKeyDown(KeyCode.V))
         {
             StopAllCoroutines();
         }
+
+        var renderer = GetComponent<Renderer>();
+        var touching = GetTouchingLeaf();
+        var color = Color.white;
+
+        if (touching != null)
+            color = Color.blue;
+
+        renderer.material.color = color;
     }
 
     // desired normal per branch
@@ -62,6 +83,31 @@ public class SimulatedHand
     // max 2 sound/color per leaf
     // leaf type alter pulse rate (/2,*2)
     // 
+
+    public GameObject GetTouchingLeaf(float extraRange = 0.25f)
+    {
+        var touching = Physics.OverlapSphere(shadow.transform.position, extraRange);
+        var nearestLen = 10000.0f;
+        var nearestObj = (GameObject)null;
+
+        for (int i = 0; i < touching.Length; ++i)
+        {
+            var obj = touching[i];
+            if (obj.name != "Leaf")
+                continue;
+
+            var ofs = obj.transform.position - transform.position;
+            var len = ofs.magnitude;
+
+            if (len < nearestLen)
+            {
+                nearestLen = len;
+                nearestObj = obj.gameObject;
+            }
+        }
+
+        return nearestObj;
+    }
 
     public IEnumerator DoInputCode()
     {
@@ -96,27 +142,8 @@ public class SimulatedHand
 
     public IEnumerator DoPullBranch()
     {
-        var touching = Physics.OverlapSphere(transform.position, 0.5f);
-        var nearestLen = 10000.0f;
-        var nearestObj = (GameObject)null;
-
-        for (int i = 0; i < touching.Length; ++i)
-        {
-            var obj = touching[i];
-            if (obj.name != "Leaf")
-                continue;
-
-            var ofs = obj.transform.position - transform.position;
-            var len = ofs.magnitude;
-
-            if (len < nearestLen)
-            {
-                nearestLen = len;
-                nearestObj = obj.gameObject;
-            }
-        }
-
-        if (nearestObj == null)
+        var nearest = GetTouchingLeaf(0.5f);
+        if (nearest == null)
             yield break;
 
         var pullObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -124,7 +151,7 @@ public class SimulatedHand
         pullObj.GetComponent<Collider>().enabled = false;
         pullObj.transform.localScale = Vector3.zero;
 
-        var nearestCollider = nearestObj.GetComponent<Collider>();
+        var nearestCollider = nearest.GetComponent<Collider>();
         var nearestPoint = nearestCollider.ClosestPointOnBounds(shadow.transform.position);
 
         while (true)
@@ -146,9 +173,35 @@ public class SimulatedHand
             yield return null;
         }
 
-        nearestObj.GetComponentInParent<BonsaiBranch>().MakeBranchFromTo(nearestPoint, shadow.transform.position);
+        nearest.GetComponentInParent<BonsaiBranch>().MakeBranchFromTo(nearestPoint, shadow.transform.position);
 
         Destroy(pullObj);
+    }
+
+    public IEnumerator DoPunchRay()
+    {
+        var nearest = GetTouchingLeaf();
+        if (nearest == null)
+            yield break;
+
+        var body = nearest.GetComponent<Rigidbody>();
+        var ofs = (nearest.transform.position - shadow.transform.position);
+        var dir = ofs.normalized;
+        var force = dir * 10.0f;
+
+        body.AddForce(force, ForceMode.Acceleration);
+    }
+
+    public IEnumerator DoCutBranch()
+    {
+        var nearest = GetTouchingLeaf();
+        if (nearest == null)
+            yield break;
+
+        var parent = nearest.transform.parent;
+        var bonsai = parent.GetComponent<BonsaiBranch>();
+
+        bonsai.CutBranch();
     }
 }
 

@@ -191,4 +191,43 @@ public class BonsaiBranch
             yield return null;
         }
     }
+
+    public void CutBranch()
+    {
+        if (transform.parent == null)
+            return;
+
+        StartCoroutine(DoFall());
+
+        transform.SetParent(null);
+
+        while (branches.transform.childCount > 0)
+        {
+            var child = branches.transform.GetChild(0);
+            var branch = child.GetComponent<BonsaiBranch>();
+
+            branch.CutBranch();
+        }
+    }
+
+    public IEnumerator DoFall()
+    {
+        var body = leaf.GetComponent<Rigidbody>();
+        var collider = leaf.GetComponent<Collider>();
+
+        body.isKinematic = false;
+        body.useGravity = true;
+
+        body.AddForce(Random.onUnitSphere * Random.Range(2.0f, 8.0f) + Vector3.up * 0.5f, ForceMode.Acceleration);
+
+        Destroy(stalk);
+        Destroy(branches);
+
+        yield return new WaitForSeconds(5.0f);
+
+        body.isKinematic = true;
+        collider.enabled = false;
+
+        Destroy(gameObject);
+    }
 }
