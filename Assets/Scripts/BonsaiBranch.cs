@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using UnityEditor;
 
 // find better spawn pos (least colliders)
 // snipping: trigger until sphere has no colliders then solid
@@ -197,17 +198,15 @@ public class BonsaiBranch
         if (transform.parent == null)
             return;
 
-        StartCoroutine(DoFall());
-
-        transform.SetParent(null);
-
-        while (branches.transform.childCount > 0)
+        for (int i = 0; i < branches.transform.childCount; ++i)
         {
-            var child = branches.transform.GetChild(0);
+            var child = branches.transform.GetChild(i);
             var branch = child.GetComponent<BonsaiBranch>();
 
             branch.CutBranch();
         }
+
+        StartCoroutine(DoFall());
     }
 
     public IEnumerator DoFall()
@@ -215,10 +214,23 @@ public class BonsaiBranch
         var body = leaf.GetComponent<Rigidbody>();
         var collider = leaf.GetComponent<Collider>();
 
+        var worldPos = leaf.transform.position;
+        var worldRot = leaf.transform.rotation;
+        var worldScale = leaf.transform.lossyScale;
+
         body.isKinematic = false;
         body.useGravity = true;
 
-        body.AddForce(Random.onUnitSphere * Random.Range(2.0f, 8.0f) + Vector3.up * 0.5f, ForceMode.Acceleration);
+        transform.SetParent(null, false);
+
+        leaf.transform.position = worldPos;
+        leaf.transform.rotation = worldRot;
+        leaf.transform.localScale = worldScale;
+
+        body.MovePosition(worldPos);
+        body.MoveRotation(worldRot);
+
+        body.AddForce(Random.onUnitSphere * Random.Range(80.0f, 120.0f) + Vector3.up * 50.0f, ForceMode.Acceleration);
 
         Destroy(stalk);
         Destroy(branches);
