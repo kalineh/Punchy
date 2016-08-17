@@ -206,20 +206,33 @@ public class BonsaiBranch
 
     public IEnumerator DoSway()
     {
+        var chaseHeight = 1.0f;
+        var rotFix = Quaternion.Euler(90.0f, 0.0f, 0.0f);
+
         while (true)
         {
-            var home = transform.position + transform.up * 1.0f;
-            var curr = sway.transform.position + sway.transform.up * 1.0f;
-            var chase = curr - home;
+            var home = transform.position + transform.up * chaseHeight;
+            var chase = home - swayChasePos;
 
             swayChaseVel += chase * 5.0f * Time.deltaTime;
-            swayChaseVel *= 0.99f;
+            swayChaseVel *= 0.98f;
 
-            //swayChasePos = Vector3.Lerp(swayChasePos, home, 1.0f * Time.deltaTime);
             swayChasePos += swayChaseVel;
 
-            Debug.DrawLine(transform.position, home, Color.white);
-            Debug.DrawLine(home, swayChasePos, Color.blue);
+            //Debug.DrawLine(transform.position, home, Color.white);
+            //Debug.DrawLine(home, swayChasePos, Color.blue);
+
+            var ofs = swayChasePos - sway.transform.position;
+            var target = ofs.normalized;
+            var dir = Vector3.RotateTowards(sway.transform.up, target, 0.1f, 0.1f);
+
+            //Debug.DrawLine(sway.transform.position, sway.transform.position + dir, Color.green);
+
+            var srcRot = sway.transform.rotation;
+            var dstRot = Quaternion.LookRotation(rotFix * dir);
+            var rot = Quaternion.Lerp(srcRot, dstRot, 0.1f);
+
+            sway.transform.rotation = rot;
 
             yield return null;
         }
