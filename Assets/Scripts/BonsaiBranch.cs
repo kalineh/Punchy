@@ -218,6 +218,8 @@ public class BonsaiBranch
         var worldRot = leaf.transform.rotation;
         var worldScale = leaf.transform.lossyScale;
 
+        collider.isTrigger = false;
+
         body.isKinematic = false;
         body.useGravity = true;
 
