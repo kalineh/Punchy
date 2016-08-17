@@ -10,8 +10,6 @@ using UnityEditor;
 public class BonsaiBranchEditor
     : Editor
 {
-    private bool showSwayTargetLocal = false;
-
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
@@ -22,13 +20,6 @@ public class BonsaiBranchEditor
             bonsai.MakeBranch();
         if (GUILayout.Button("Shake"))
             bonsai.OnHit(Random.onUnitSphere * 0.1f);
-
-        var wasShowSwayTargetLocal = showSwayTargetLocal;
-        showSwayTargetLocal = GUILayout.Toggle(showSwayTargetLocal, "Show Sway");
-        if (showSwayTargetLocal && !wasShowSwayTargetLocal)
-            bonsai.StartDebugDrawSwayTargetLocal();
-        if (!showSwayTargetLocal && wasShowSwayTargetLocal)
-            bonsai.StopDebugDrawSwayTargetLocal();
     }
 }
 
@@ -37,6 +28,8 @@ public class BonsaiBranchEditor
 public class BonsaiBranch
     : MonoBehaviour
 {
+    private GameObject sway;
+
     private GameObject branches;
     private GameObject stalk;
     private GameObject leaf;
@@ -50,9 +43,11 @@ public class BonsaiBranch
     private Renderer stalkRenderer;
     private Renderer leafRenderer;
 
+    private Vector3 swayChasePos = Vector3.zero;
+    private Vector3 swayChaseVel = Vector3.zero;
+
+
     private int depth = 0;
-    private Vector3 swayTargetOriginal;
-    private Vector3 swayTargetLocal;
 
     public void Start()
     {
@@ -61,9 +56,10 @@ public class BonsaiBranch
 
     public void OnScriptReload()
     {
-        branches = transform.FindChild("Branches").gameObject;
-        stalk = transform.FindChild("Stalk").gameObject;
-        leaf = transform.FindChild("Leaf").gameObject;
+        sway = transform.FindChild("Sway").gameObject;
+        branches = transform.FindChild("Sway/Branches").gameObject;
+        stalk = transform.FindChild("Sway/Stalk").gameObject;
+        leaf = transform.FindChild("Sway/Leaf").gameObject;
 
         stalkRigidbody = stalk.GetComponent<Rigidbody>();
         leafRigidbody = leaf.GetComponent<Rigidbody>();
@@ -77,13 +73,9 @@ public class BonsaiBranch
         Physics.IgnoreCollision(stalkCollider, leafCollider);
         //Physics.IgnoreCollision(stalkCollider, transform.parent.parent.FindChild("Leaf").GetComponent<Collider>());
 
-        swayTargetOriginal = Vector3.up * 1.0f;
-        swayTargetLocal = swayTargetOriginal;
-
         //StartCoroutine(DoAutoGrow());
         StartCoroutine(DoDebugInput());
         StartCoroutine(DoSway());
-        StartCoroutine(DoSwayReturn());
     }
 
     public Vector3 FindBestGrowDir()
@@ -205,42 +197,29 @@ public class BonsaiBranch
     {
         while (force.magnitude > 0.01f)
         {
-            swayTargetLocal += force;
+            swayChasePos += force;
             force = Vector3.MoveTowards(force, Vector3.zero, 0.25f * Time.deltaTime);
-            yield return null;
-        }
-    }
 
-    public IEnumerator DoSwayReturn()
-    {
-        while (true)
-        {
-            swayTargetLocal = Vector3.Lerp(swayTargetLocal, swayTargetOriginal, 1.0f * Time.deltaTime);
             yield return null;
         }
     }
 
     public IEnumerator DoSway()
     {
-        var rotFix = Quaternion.Euler(90.0f, 0.0f, 0.0f);
-
-        //obj.transform.rotation = Quaternion.FromToRotation(Vector3.up, dir);
-
         while (true)
         {
-            // sway dir is upwards, but rotation is forward
+            var home = transform.position + transform.up * 1.0f;
+            var curr = sway.transform.position + sway.transform.up * 1.0f;
+            var chase = curr - home;
 
-            var srcPos = transform.localPosition;
-            var dstPos = transform.localPosition + swayTargetLocal;
-            var dir = (dstPos - srcPos).normalized;
+            swayChaseVel += chase * 5.0f * Time.deltaTime;
+            swayChaseVel *= 0.99f;
 
-            dir = rotFix * dir;
+            //swayChasePos = Vector3.Lerp(swayChasePos, home, 1.0f * Time.deltaTime);
+            swayChasePos += swayChaseVel;
 
-            var srcRot = transform.localRotation;
-            var dstRot = Quaternion.LookRotation(dir);
-            var rot = Quaternion.Lerp(srcRot, dstRot, 0.1f);
-
-            transform.localRotation = rot;
+            Debug.DrawLine(transform.position, home, Color.white);
+            Debug.DrawLine(home, swayChasePos, Color.blue);
 
             yield return null;
         }
@@ -322,30 +301,5 @@ public class BonsaiBranch
         collider.enabled = false;
 
         Destroy(gameObject);
-    }
-
-    public void StartDebugDrawSwayTargetLocal()
-    {
-        StopCoroutine("DoDebugDrawSwayTargetLocal");
-        StartCoroutine("DoDebugDrawSwayTargetLocal");
-    }
-
-    public void StopDebugDrawSwayTargetLocal()
-    {
-        StopCoroutine("DoDebugDrawSwayTargetLocal");
-    }
-
-    public IEnumerator DoDebugDrawSwayTargetLocal()
-    {
-        while (true)
-        {
-            var src = transform.position;
-            var dst = transform.position + swayTargetLocal;
-
-            Debug.DrawLine(src, dst, Color.red);
-            Debug.DrawLine(Vector3.zero, Vector3.one, Color.blue);
-
-            yield return null;
-        }
     }
 }
