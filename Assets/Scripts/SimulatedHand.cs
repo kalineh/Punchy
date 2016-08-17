@@ -189,7 +189,9 @@ public class SimulatedHand
         var dir = ofs.normalized;
         var force = dir * 10.0f;
 
-        body.AddForce(force, ForceMode.Acceleration);
+        var bonsai = nearest.GetComponentInParent<BonsaiBranch>();
+
+        bonsai.OnHit(force);
     }
 
     public IEnumerator DoCutBranch()

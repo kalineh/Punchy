@@ -2,11 +2,37 @@
 using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+
+#if UNITY_EDITOR
 using UnityEditor;
 
-// find better spawn pos (least colliders)
-// snipping: trigger until sphere has no colliders then solid
-// falling: leafy sound on trigger enter
+[CustomEditor(typeof(BonsaiBranch))]
+public class BonsaiBranchEditor
+    : Editor
+{
+    private bool showSwayTargetLocal = false;
+
+    public override void OnInspectorGUI()
+    {
+        base.OnInspectorGUI();
+
+        var bonsai = target as BonsaiBranch;
+
+        if (GUILayout.Button("Grow"))
+            bonsai.MakeBranch();
+        if (GUILayout.Button("Shake"))
+            bonsai.OnHit(Random.onUnitSphere * 0.1f);
+
+        var wasShowSwayTargetLocal = showSwayTargetLocal;
+        showSwayTargetLocal = GUILayout.Toggle(showSwayTargetLocal, "Show Sway");
+        if (showSwayTargetLocal && !wasShowSwayTargetLocal)
+            bonsai.StartDebugDrawSwayTargetLocal();
+        if (!showSwayTargetLocal && wasShowSwayTargetLocal)
+            bonsai.StopDebugDrawSwayTargetLocal();
+    }
+}
+
+#endif
 
 public class BonsaiBranch
     : MonoBehaviour
@@ -25,6 +51,8 @@ public class BonsaiBranch
     private Renderer leafRenderer;
 
     private int depth = 0;
+    private Vector3 swayTargetOriginal;
+    private Vector3 swayTargetLocal;
 
     public void Start()
     {
@@ -49,9 +77,13 @@ public class BonsaiBranch
         Physics.IgnoreCollision(stalkCollider, leafCollider);
         //Physics.IgnoreCollision(stalkCollider, transform.parent.parent.FindChild("Leaf").GetComponent<Collider>());
 
+        swayTargetOriginal = Vector3.up * 1.0f;
+        swayTargetLocal = swayTargetOriginal;
+
         //StartCoroutine(DoAutoGrow());
         StartCoroutine(DoDebugInput());
         StartCoroutine(DoSway());
+        StartCoroutine(DoSwayReturn());
     }
 
     public Vector3 FindBestGrowDir()
@@ -108,9 +140,6 @@ public class BonsaiBranch
 
         obj.transform.SetParent(branches.transform);
         obj.transform.position = src;
-        // what are we doing
-        // we have a world space dir
-        // so we can make a worldspace rot
 
         obj.transform.rotation = Quaternion.FromToRotation(Vector3.up, dir);
         obj.transform.localScale = Vector3.one * scale;
@@ -167,14 +196,64 @@ public class BonsaiBranch
         }
     }
 
+    public void OnHit(Vector3 force)
+    {
+        StartCoroutine(DoSwayHit(force));
+    }
+
+    public IEnumerator DoSwayHit(Vector3 force)
+    {
+        while (force.magnitude > 0.01f)
+        {
+            swayTargetLocal += force;
+            force = Vector3.MoveTowards(force, Vector3.zero, 0.25f * Time.deltaTime);
+            yield return null;
+        }
+    }
+
+    public IEnumerator DoSwayReturn()
+    {
+        while (true)
+        {
+            swayTargetLocal = Vector3.Lerp(swayTargetLocal, swayTargetOriginal, 1.0f * Time.deltaTime);
+            yield return null;
+        }
+    }
+
     public IEnumerator DoSway()
     {
-        var src = transform.localRotation;
+        var rotFix = Quaternion.Euler(90.0f, 0.0f, 0.0f);
 
+        //obj.transform.rotation = Quaternion.FromToRotation(Vector3.up, dir);
+
+        while (true)
+        {
+            // sway dir is upwards, but rotation is forward
+
+            var srcPos = transform.localPosition;
+            var dstPos = transform.localPosition + swayTargetLocal;
+            var dir = (dstPos - srcPos).normalized;
+
+            dir = rotFix * dir;
+
+            var srcRot = transform.localRotation;
+            var dstRot = Quaternion.LookRotation(dir);
+            var rot = Quaternion.Lerp(srcRot, dstRot, 0.1f);
+
+            transform.localRotation = rot;
+
+            yield return null;
+        }
+    }
+
+    public IEnumerator DoSwayRandom()
+    {
         var xs = Random.Range(0.5f, 1.0f);
         var zs = Random.Range(0.5f, 1.0f);
         var xm = Random.Range(10.0f, 20.0f);
         var zm = Random.Range(10.0f, 20.0f);
+
+        var src = transform.localRotation;
 
         while (true)
         {
@@ -243,5 +322,30 @@ public class BonsaiBranch
         collider.enabled = false;
 
         Destroy(gameObject);
+    }
+
+    public void StartDebugDrawSwayTargetLocal()
+    {
+        StopCoroutine("DoDebugDrawSwayTargetLocal");
+        StartCoroutine("DoDebugDrawSwayTargetLocal");
+    }
+
+    public void StopDebugDrawSwayTargetLocal()
+    {
+        StopCoroutine("DoDebugDrawSwayTargetLocal");
+    }
+
+    public IEnumerator DoDebugDrawSwayTargetLocal()
+    {
+        while (true)
+        {
+            var src = transform.position;
+            var dst = transform.position + swayTargetLocal;
+
+            Debug.DrawLine(src, dst, Color.red);
+            Debug.DrawLine(Vector3.zero, Vector3.one, Color.blue);
+
+            yield return null;
+        }
     }
 }
