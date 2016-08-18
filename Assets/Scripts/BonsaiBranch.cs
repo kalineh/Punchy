@@ -46,8 +46,9 @@ public class BonsaiBranch
     private Vector3 swayChasePos = Vector3.zero;
     private Vector3 swayChaseVel = Vector3.zero;
 
-
     private int depth = 0;
+
+    public bool debugDrawSway;
 
     public void Start()
     {
@@ -219,20 +220,22 @@ public class BonsaiBranch
 
             swayChasePos += swayChaseVel;
 
-            //Debug.DrawLine(transform.position, home, Color.white);
-            //Debug.DrawLine(home, swayChasePos, Color.blue);
-
             var ofs = swayChasePos - sway.transform.position;
             var target = ofs.normalized;
             var dir = Vector3.RotateTowards(sway.transform.up, target, 0.1f, 0.1f);
-
-            //Debug.DrawLine(sway.transform.position, sway.transform.position + dir, Color.green);
 
             var srcRot = sway.transform.rotation;
             var dstRot = Quaternion.LookRotation(rotFix * dir);
             var rot = Quaternion.Lerp(srcRot, dstRot, 0.1f);
 
             sway.transform.rotation = rot;
+
+            if (debugDrawSway)
+            {
+                Debug.DrawLine(transform.position, home, Color.white);
+                Debug.DrawLine(home, swayChasePos, Color.blue);
+                Debug.DrawLine(sway.transform.position, sway.transform.position + dir, Color.green);
+            }
 
             yield return null;
         }
