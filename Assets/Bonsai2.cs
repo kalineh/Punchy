@@ -53,6 +53,7 @@ public class Bonsai2
 
         var rotFix = Quaternion.Euler(90.0f, 0.0f, 0.0f);
 
+        var pbody = p.GetComponent<Rigidbody>();
         var body = GetComponent<Rigidbody>();
         var local = p.transform.InverseTransformDirection(dir);
 
@@ -71,15 +72,23 @@ public class Bonsai2
             //Debug.DrawLine(transform.position, transform.position + local, Color.yellow);
             //Debug.DrawLine(p.transform.position, targetPos, Color.magenta);
 
-            //body.MovePosition(Vector3.Lerp(body.position, targetPos, lp));
+            body.MovePosition(Vector3.Lerp(body.position, targetPos, lp));
             //body.MoveRotation(Quaternion.Slerp(body.rotation, targetRot, lr));
 
             var toTargetPos = targetPos - transform.position;
             var toTargetRot = Quaternion.FromToRotation(transform.rotation * Vector3.forward, targetRot * Vector3.forward);
 
-            var force = toTargetPos.magnitude * 200.0f + 25.0f;
+            var force = toTargetPos.magnitude * 1200.0f + 7500.0f;
 
             body.AddForce(toTargetPos * force * Time.deltaTime, ForceMode.Acceleration);
+
+            var backForceSplit = 0.8f;
+
+            var selfVelocity = body.velocity * (1.0f - backForceSplit);
+            var backVelocity = body.velocity * backForceSplit;
+
+            body.velocity = selfVelocity;
+            pbody.velocity += backVelocity;
 
             var fwdAngle = Vector3.Angle(transform.forward, targetRot * Vector3.forward);
             var fwdCross = Vector3.Cross(transform.up, targetRot * Vector3.forward);
