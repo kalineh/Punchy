@@ -51,25 +51,40 @@ public class Bonsai2
     {
         parent = p;
 
+        var rotFix = Quaternion.Euler(90.0f, 0.0f, 0.0f);
+
         var body = GetComponent<Rigidbody>();
+        var local = p.transform.InverseTransformDirection(dir);
+
+        var localUp = Vector3.up;
+        var localRight = p.transform.InverseTransformDirection(dir);
 
         while (parent != null)
         {
-            var lp = 0.9f;
-            var lr = 0.2f;
+            var lp = 0.2f;
+            var lr = 0.01f;
 
             var targetPos = p.transform.position + p.transform.rotation * ofs;
-            var targetRot = Quaternion.LookRotation(dir) * p.transform.rotation;
+            var targetDir = p.transform.rotation * local;
+            var targetRot = Quaternion.LookRotation(targetDir, p.transform.up);
 
-            var rotFix = Quaternion.Euler(90.0f, 0.0f, 0.0f);
+            //Debug.DrawLine(transform.position, transform.position + local, Color.yellow);
+            //Debug.DrawLine(p.transform.position, targetPos, Color.magenta);
 
-            targetRot *= rotFix;
+            //body.MovePosition(Vector3.Lerp(body.position, targetPos, lp));
+            //body.MoveRotation(Quaternion.Slerp(body.rotation, targetRot, lr));
 
-            body.MovePosition(Vector3.Lerp(transform.position, targetPos, lp));
-            body.MoveRotation(Quaternion.Lerp(transform.rotation, targetRot, lr));
+            var toTargetPos = targetPos - transform.position;
+            var toTargetRot = Quaternion.FromToRotation(transform.rotation * Vector3.forward, targetRot * Vector3.forward);
 
-            Debug.DrawLine(p.transform.position, targetPos, Color.red);
-            Debug.DrawLine(targetPos, targetRot * Vector3.forward, Color.blue);
+            var force = toTargetPos.magnitude * 200.0f + 25.0f;
+
+            body.AddForce(toTargetPos * force * Time.deltaTime, ForceMode.Acceleration);
+
+            var fwdAngle = Vector3.Angle(transform.forward, targetRot * Vector3.forward);
+            var fwdCross = Vector3.Cross(transform.up, targetRot * Vector3.forward);
+
+            body.AddTorque(fwdCross * fwdAngle * 8.0f * Time.deltaTime);
 
             yield return null;
         }
@@ -81,8 +96,8 @@ public class Bonsai2
         var obj = GameObject.Instantiate(resource);
         var branch = obj.GetComponent<Bonsai2>();
 
-        var ofs = Random.onUnitSphere;
-        var dir = Random.onUnitSphere;
+        var ofs = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 1.5f, 0.0f);
+        var dir = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 1.5f, 0.0f);
 
         branch.Attach(gameObject, ofs, dir);
 
