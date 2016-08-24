@@ -59,18 +59,66 @@ public class Bonsai3
         var rotDst = Quaternion.LookRotation(p.transform.forward, p.transform.up);
 
         var body = GetComponent<Rigidbody>();
+        var bodyParent = parent.GetComponent<Rigidbody>();
+
+        // get component-wise angle offsets
+
+        var eulerSrc = rotSrc.eulerAngles;
+        var eulerDst = rotDst.eulerAngles;
+
+        var ofsPitch = eulerDst.x - eulerSrc.x;
+        var ofsYaw = eulerDst.y - eulerSrc.y;
+        var ofsRoll = eulerDst.z - eulerSrc.z;
+
+        Debug.LogFormat("p:{0},y:{1},r:{2}", ofsPitch, ofsYaw, ofsRoll);
+
+        // we need to be able to add angular vel
+        // which means we need pyr 
+        //
 
         while (true)
         {
-            var targetPos = p.transform.position + ofs;
+            var ofsLocal = bodyParent.rotation * ofs;
+            var targetPos = bodyParent.position + ofsLocal;
             var targetRot = Quaternion.LookRotation(forward, up);
 
-            body.MovePosition(Vector3.Lerp(transform.position, targetPos, 0.1f));
-            body.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, 0.1f));
+            targetRot *= bodyParent.rotation;
+
+            body.MovePosition(Vector3.Lerp(transform.position, targetPos, 0.01f));
+            //body.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, 0.1f));
+            body.useGravity = false;
+
+            var moveOfs = targetPos - body.position;
+            var moveForce = moveOfs * 20.0f;
+
+            body.AddForce(moveForce, ForceMode.Acceleration);
+
+            var eulerCurrent = body.rotation.eulerAngles;
+            var eulerTarget = targetRot.eulerAngles;
+            var eulerOfs = eulerTarget - eulerCurrent;
+
+            if (eulerOfs.x < -180.0f) eulerOfs.x += 360.0f;
+            if (eulerOfs.y < -180.0f) eulerOfs.y += 360.0f;
+            if (eulerOfs.z < -180.0f) eulerOfs.z += 360.0f;
+
+            if (eulerOfs.x > +180.0f) eulerOfs.x -= 360.0f;
+            if (eulerOfs.y > +180.0f) eulerOfs.y -= 360.0f;
+            if (eulerOfs.z > +180.0f) eulerOfs.z -= 360.0f;
+
+            //Debug.LogFormat("eulerofs: {0}", eulerOfs);
+
+            var localEulerOfs = body.rotation * eulerOfs;
+            var torque = localEulerOfs * 0.5f;
+
+            body.AddTorque(torque, ForceMode.Acceleration);
 
             Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
             Debug.DrawLine(transform.position, transform.position + right, Color.red);
             Debug.DrawLine(transform.position, transform.position + up, Color.green);
+
+            //Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
+            //Debug.DrawLine(transform.position, transform.position + right, Color.red);
+            //Debug.DrawLine(transform.position, transform.position + up, Color.green);
 
             yield return null;
         }
@@ -86,6 +134,12 @@ public class Bonsai3
 
         var ofs = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 0.5f, 0.0f);
         var dir = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 0.5f, 0.0f);
+
+        ofs = Vector3.forward * 1.25f;
+        dir = Vector3.forward;
+        dir = Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f); // pyr=-331,0,0
+        //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
+        //dir = Vector3.RotateTowards(Vector3.right, Vector3.up, 0.5f, 0.0f); // pyr=0,-28,0
 
         branch.Attach(gameObject, ofs, dir);
 
