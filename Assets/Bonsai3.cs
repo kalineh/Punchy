@@ -20,6 +20,8 @@ public class Bonsai3Editor
             bonsai.MakeBranch();
         if (GUILayout.Button("AutoGrow"))
             bonsai.StartAutoGrow();
+        if (GUILayout.Button("Stop All Coroutines"))
+            bonsai.StopAllCoroutines();
     }
 }
 
@@ -71,11 +73,7 @@ public class Bonsai3
         var ofsRoll = eulerDst.z - eulerSrc.z;
 
         Debug.LogFormat("p:{0},y:{1},r:{2}", ofsPitch, ofsYaw, ofsRoll);
-
-        // we need to be able to add angular vel
-        // which means we need pyr 
-        //
-
+        
         while (true)
         {
             var ofsLocal = bodyParent.rotation * ofs;
@@ -95,17 +93,40 @@ public class Bonsai3
 
             var eulerCurrent = body.rotation.eulerAngles;
             var eulerTarget = targetRot.eulerAngles;
-            var eulerOfs = eulerTarget - eulerCurrent;
 
-            if (eulerOfs.x < -180.0f) eulerOfs.x += 360.0f;
-            if (eulerOfs.y < -180.0f) eulerOfs.y += 360.0f;
-            if (eulerOfs.z < -180.0f) eulerOfs.z += 360.0f;
+            //var flipCurrent = Vector3.Dot(parent.transform.forward, Vector3.up) < 0.0f;
+            //var flipTarget = Vector3.Dot(transform.forward, Vector3.up) < 0.0f;
 
-            if (eulerOfs.x > +180.0f) eulerOfs.x -= 360.0f;
-            if (eulerOfs.y > +180.0f) eulerOfs.y -= 360.0f;
-            if (eulerOfs.z > +180.0f) eulerOfs.z -= 360.0f;
+            var flipTarget = Vector3.Dot(targetRot * Vector3.up, Vector3.up) < 0.0f;
+            var flipCurrent = Vector3.Dot(body.rotation * Vector3.up, Vector3.up) < 0.0f;
 
-            //Debug.LogFormat("eulerofs: {0}", eulerOfs);
+            if (flipTarget)
+            {
+                targetRot = Quaternion.LookRotation(targetRot * Vector3.forward, targetRot * -Vector3.up);
+                eulerTarget = targetRot.eulerAngles;
+            }
+
+            if (flipCurrent)
+            {
+                eulerCurrent = Quaternion.LookRotation(body.rotation * Vector3.forward, body.rotation * -Vector3.up).eulerAngles;
+            }
+
+            var eulerDeltaX = Mathf.DeltaAngle(eulerCurrent.x, eulerTarget.x);
+            var eulerDeltaY = Mathf.DeltaAngle(eulerCurrent.y, eulerTarget.y);
+            var eulerDeltaZ = Mathf.DeltaAngle(eulerCurrent.z, eulerTarget.z);
+
+            //var eulerOfs = eulerTarget - eulerCurrent;
+            var eulerOfs = new Vector3(eulerDeltaX, eulerDeltaY, eulerDeltaZ);
+
+            //if (eulerOfs.x <= -180.0f) eulerOfs.x += 360.0f;
+            //if (eulerOfs.y <= -180.0f) eulerOfs.y += 360.0f;
+            //if (eulerOfs.z <= -180.0f) eulerOfs.z += 360.0f;
+
+            //if (eulerOfs.x >= +180.0f) eulerOfs.x -= 360.0f;
+            //if (eulerOfs.y >= +180.0f) eulerOfs.y -= 360.0f;
+            //if (eulerOfs.z >= +180.0f) eulerOfs.z -= 360.0f;
+
+            Debug.LogFormat("eulerofs: {0}, eulerCurrent: {1}, eulerTarget: {2}, sign: {3}", eulerOfs, eulerCurrent, eulerTarget, Vector3.Dot(parent.transform.forward, Vector3.forward));
 
             var localEulerOfs = body.rotation * eulerOfs;
             var torque = localEulerOfs * 0.5f;
@@ -137,7 +158,7 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        dir = Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f); // pyr=-331,0,0
+        //dir = Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f); // pyr=-331,0,0
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
         //dir = Vector3.RotateTowards(Vector3.right, Vector3.up, 0.5f, 0.0f); // pyr=0,-28,0
 
