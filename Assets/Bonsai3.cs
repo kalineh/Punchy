@@ -97,8 +97,8 @@ public class Bonsai3
             //var flipCurrent = Vector3.Dot(parent.transform.forward, Vector3.up) < 0.0f;
             //var flipTarget = Vector3.Dot(transform.forward, Vector3.up) < 0.0f;
 
-            var flipTarget = Vector3.Dot(targetRot * Vector3.up, Vector3.up) < 0.0f;
             var flipCurrent = Vector3.Dot(body.rotation * Vector3.up, Vector3.up) < 0.0f;
+            var flipTarget = Vector3.Dot(targetRot * Vector3.up, Vector3.up) < 0.0f;
 
             if (flipTarget)
             {
@@ -108,7 +108,7 @@ public class Bonsai3
 
             if (flipCurrent)
             {
-                eulerCurrent = Quaternion.LookRotation(body.rotation * Vector3.forward, body.rotation * -Vector3.up).eulerAngles;
+                //eulerCurrent = Quaternion.LookRotation(body.rotation * Vector3.forward, body.rotation * -Vector3.up).eulerAngles;
             }
 
             var eulerDeltaX = Mathf.DeltaAngle(eulerCurrent.x, eulerTarget.x);
@@ -126,7 +126,7 @@ public class Bonsai3
             //if (eulerOfs.y >= +180.0f) eulerOfs.y -= 360.0f;
             //if (eulerOfs.z >= +180.0f) eulerOfs.z -= 360.0f;
 
-            Debug.LogFormat("eulerofs: {0}, eulerCurrent: {1}, eulerTarget: {2}, sign: {3}", eulerOfs, eulerCurrent, eulerTarget, Vector3.Dot(parent.transform.forward, Vector3.forward));
+            //Debug.LogFormat("eulerofs: {0}, eulerCurrent: {1}, eulerTarget: {2}, sign: {3}", eulerOfs, eulerCurrent, eulerTarget, Vector3.Dot(parent.transform.forward, Vector3.forward));
 
             var localEulerOfs = body.rotation * eulerOfs;
             var torque = localEulerOfs * 0.5f;
