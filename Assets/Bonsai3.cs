@@ -49,7 +49,7 @@ public class Bonsai3
         StartCoroutine(attach);
     }
 
-    public Vector3 CalcTorqueTowards2(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    public Vector3 CalcTorqueTowards(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
     {
         var rotSrc = bodySrc.rotation;
         var rotDst = bodyDst.rotation * ofsDst;
@@ -80,7 +80,7 @@ public class Bonsai3
         return torque;
     }
 
-    public Vector3 CalcTorqueTowards(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    public Vector3 CalcTorqueTowards2(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
     {
         var rotSrc = bodySrc.rotation;
         var rotDst = bodyDst.rotation * ofsDst;
@@ -95,6 +95,34 @@ public class Bonsai3
         var torque = q * Vector3.Scale(bodySrc.inertiaTensor, Quaternion.Inverse(q) * w);
 
         return torque / Time.fixedDeltaTime;
+    }
+
+    public Vector3 CalcTorqueTowards3(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    {
+        var rotSrc = bodySrc.rotation;
+        var rotDst = bodyDst.rotation * ofsDst;
+
+        var z = Vector3.Cross(transform.forward, rotDst * Vector3.forward);
+        var y = Vector3.Cross(transform.up, rotDst * Vector3.up);
+
+        var thetaZ = Mathf.Asin(z.magnitude);
+        var thetaY = Mathf.Asin(y.magnitude);
+
+        var dt = Time.fixedDeltaTime;
+        var wZ = z.normalized * (thetaZ / dt);
+        var wY = y.normalized * (thetaY / dt);
+
+        var q = transform.rotation * bodySrc.inertiaTensorRotation;
+        var T = q * Vector3.Scale(bodySrc.inertiaTensor, Quaternion.Inverse(q) * (wZ + wY));
+
+        // too wobbly
+        //rigidbody.AddTorque(T, ForceMode.VelocityChange);
+
+        // stable, but still laggy
+        //rigidbody.angularVelocity = T;
+        //rigidbody.maxAngularVelocity = T.magnitude;
+
+        return T;
     }
 
     public IEnumerator DoAttachment(GameObject p, Vector3 ofs, Vector3 dir)
@@ -143,10 +171,14 @@ public class Bonsai3
             // why negative?
             var eulerOfsRot = Quaternion.Euler(-ofsPitch, -ofsRoll, -ofsYaw);
             var torque = CalcTorqueTowards(body, bodyParent, eulerOfsRot);
-            //var torque = CalcTorqueTowards2(body, bodyParent, Quaternion.Euler(ofsPitch, ofsRoll, ofsYaw));
+            var torque2 = CalcTorqueTowards2(body, bodyParent, eulerOfsRot);
+            var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
 
-            //body.AddTorque(torque * 10.0f, ForceMode.Acceleration);
-            body.AddTorque(torque * 5.0f, ForceMode.Acceleration);
+            //body.AddTorque(torque * 2.0f, ForceMode.Acceleration);
+            //body.AddTorque(torque2 * 10.0f, ForceMode.Acceleration);
+
+            body.angularVelocity = torque3;
+            body.maxAngularVelocity = torque3.magnitude;
 
             Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
             Debug.DrawLine(transform.position, transform.position + right, Color.red);
