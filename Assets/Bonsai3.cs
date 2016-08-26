@@ -28,6 +28,7 @@ public class Bonsai3Editor
 #endif
 
 
+[SelectionBase]
 public class Bonsai3
     : MonoBehaviour
 {
@@ -133,6 +134,17 @@ public class Bonsai3
         var right = Vector3.Cross(p.transform.up, forward);
         var up = Vector3.Cross(forward, right);
 
+        var upBase = up;
+        var upFlip = Vector3.Dot(upBase, Vector3.up) < 0.0f;
+
+        Debug.Log(Vector3.Dot(upBase, Vector3.up));
+        if (upFlip)
+        {
+            GetComponentInChildren<Renderer>().material.color = Color.blue;
+            right = -right;
+        }
+
+
         var rotSrc = Quaternion.LookRotation(forward, up);
         var rotDst = Quaternion.LookRotation(p.transform.forward, p.transform.up);
 
@@ -148,10 +160,15 @@ public class Bonsai3
         var ofsYaw = eulerDst.y - eulerSrc.y;
         var ofsRoll = eulerDst.z - eulerSrc.z;
 
-        Debug.LogFormat("p:{0},y:{1},r:{2}", ofsPitch, ofsYaw, ofsRoll);
+        Debug.LogFormat("parent: {0}, p:{1},y:{2},r:{3}", p.name, ofsPitch, ofsYaw, ofsRoll);
+        Debug.LogFormat("   ofs: {0}", ofs);
+
+        body.position = bodyParent.position;
+        body.rotation = Quaternion.LookRotation(forward, up);
         
         while (true)
         {
+            ofs = new Vector3(0, 1, 1);
             var ofsLocal = bodyParent.rotation * ofs;
             var targetPos = bodyParent.position + ofsLocal;
             var targetRot = Quaternion.LookRotation(forward, up);
@@ -170,12 +187,7 @@ public class Bonsai3
 
             // why negative?
             var eulerOfsRot = Quaternion.Euler(-ofsPitch, -ofsRoll, -ofsYaw);
-            var torque = CalcTorqueTowards(body, bodyParent, eulerOfsRot);
-            var torque2 = CalcTorqueTowards2(body, bodyParent, eulerOfsRot);
             var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
-
-            //body.AddTorque(torque * 2.0f, ForceMode.Acceleration);
-            //body.AddTorque(torque2 * 10.0f, ForceMode.Acceleration);
 
             body.angularVelocity = torque3;
             body.maxAngularVelocity = torque3.magnitude;
@@ -205,7 +217,9 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        dir = Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f); // pyr=-331,0,0
+        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f); // pyr=-331,0,0
+        dir = Quaternion.Euler(-40.0f, 0.0f, 0.0f) *
+            transform.rotation * Vector3.forward;
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
         //dir = Vector3.RotateTowards(Vector3.right, Vector3.up, 0.5f, 0.0f); // pyr=0,-28,0
 
