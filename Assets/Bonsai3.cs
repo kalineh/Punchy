@@ -126,6 +126,61 @@ public class Bonsai3
         return T;
     }
 
+    private Vector3 RectifyAngleDifference(Vector3 angdiff)
+    {
+        if (angdiff.x > 180) angdiff.x -= 360;
+        if (angdiff.y > 180) angdiff.y -= 360;
+        if (angdiff.z > 180) angdiff.z -= 360;
+        return angdiff;
+    }
+
+    public Vector3 CalcTorqueTowards4(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    {
+        var rotSrc = bodySrc.rotation;
+        var rotDst = bodyDst.rotation;
+
+        rotDst = ofsDst * rotDst;
+
+        var srcUp = rotSrc * Vector3.up;
+        var srcFwd = rotSrc * Vector3.forward;
+
+        var dstUp = rotDst * Vector3.up;
+        var dstFwd = rotDst * Vector3.forward;
+
+        var diff = Quaternion.FromToRotation(srcUp, dstUp);
+        var angle = Quaternion.Angle(rotDst, rotSrc);
+        var perp = Vector3.Cross(dstUp, dstFwd);
+
+        if (Vector3.Dot(srcFwd, perp) < 0.0f)
+            angle *= -1.0f;
+
+        var correction = Quaternion.AngleAxis(angle, dstUp);
+
+        var rotation = RectifyAngleDifference(diff.eulerAngles);
+        var corrective = RectifyAngleDifference(correction.eulerAngles);
+
+        var torque = (rotation - corrective * 0.5f) - bodySrc.angularVelocity;
+
+        return torque;
+    }
+
+    /*
+    public Vector3 CalcTorqueTowards4(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    {
+        Quaternion AngleDifference = Quaternion.FromToRotation(ObjectToAttract.transform.up, transform.up);
+
+        float AngleToCorrect = Quaternion.Angle(transform.rotation, ObjectToAttract.transform.rotation);
+        Vector3 Perpendicular = Vector3.Cross(transform.up, transform.forward);
+        if (Vector3.Dot(ObjectToAttract.transform.forward, Perpendicular) < 0)
+            AngleToCorrect *= -1;
+        Quaternion Correction = Quaternion.AngleAxis(AngleToCorrect, transform.up);
+
+        Vector3 MainRotation = RectifyAngleDifference((AngleDifference).eulerAngles);
+        Vector3 CorrectiveRotation = RectifyAngleDifference((Correction).eulerAngles);
+        ObjectToAttract.AddTorque((MainRotation - CorrectiveRotation / 2) - ObjectToAttract.angularVelocity, ForceMode.VelocityChange); ;
+    }
+    */
+
     public IEnumerator DoAttachment(GameObject p, Vector3 ofs, Vector3 dir)
     {
         parent = p;
@@ -186,11 +241,16 @@ public class Bonsai3
             body.AddForce(moveForce, ForceMode.Acceleration);
 
             // why negative?
-            var eulerOfsRot = Quaternion.Euler(-ofsPitch, -ofsRoll, -ofsYaw);
-            var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
+            var eulerOfs = RectifyAngleDifference(new Vector3(ofsPitch, ofsRoll, ofsYaw));
+            var eulerOfsRot = Quaternion.Euler(eulerOfs);
+            //var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
+            //body.angularVelocity = torque3;
+            //body.maxAngularVelocity = torque3.magnitude;
 
-            body.angularVelocity = torque3;
-            body.maxAngularVelocity = torque3.magnitude;
+            var torque4 = CalcTorqueTowards4(body, bodyParent, eulerOfsRot);
+            body.AddTorque(torque4 * 0.1f, ForceMode.Acceleration);
+            //body.angularVelocity = torque4;
+            //body.maxAngularVelocity = torque4.magnitude;
 
             Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
             Debug.DrawLine(transform.position, transform.position + right, Color.red);
