@@ -50,7 +50,7 @@ public class Bonsai3
         StartCoroutine(attach);
     }
 
-    public Vector3 CalcTorqueTowards(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    public Vector3 CalcTorqueTowards1(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
     {
         var rotSrc = bodySrc.rotation;
         var rotDst = bodyDst.rotation * ofsDst;
@@ -131,6 +131,9 @@ public class Bonsai3
         if (angdiff.x > 180) angdiff.x -= 360;
         if (angdiff.y > 180) angdiff.y -= 360;
         if (angdiff.z > 180) angdiff.z -= 360;
+        if (angdiff.x < 180) angdiff.x += 360;
+        if (angdiff.y < 180) angdiff.y += 360;
+        if (angdiff.z < 180) angdiff.z += 360;
         return angdiff;
     }
 
@@ -164,6 +167,18 @@ public class Bonsai3
         return torque;
     }
 
+    public Vector3 CalcTorqueTowards5(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
+    {
+        var rotSrc = bodySrc.rotation;
+        var rotDst = bodyDst.rotation;
+
+        rotDst = ofsDst * rotDst;
+
+        var torque = rotSrc * Vector3.up * 0.5f;
+
+        return torque;
+    }
+
     /*
     public Vector3 CalcTorqueTowards4(Rigidbody bodySrc, Rigidbody bodyDst, Quaternion ofsDst)
     {
@@ -181,6 +196,13 @@ public class Bonsai3
     }
     */
 
+    public static float AngleSigned(Vector3 v1, Vector3 v2, Vector3 n)
+    {
+        return Mathf.Atan2(
+            Vector3.Dot(n, Vector3.Cross(v1, v2)),
+            Vector3.Dot(v1, v2)) * Mathf.Rad2Deg;
+    }
+
     public IEnumerator DoAttachment(GameObject p, Vector3 ofs, Vector3 dir)
     {
         parent = p;
@@ -196,7 +218,7 @@ public class Bonsai3
         if (upFlip)
         {
             GetComponentInChildren<Renderer>().material.color = Color.blue;
-            right = -right;
+            //right = -right;
         }
 
 
@@ -242,15 +264,69 @@ public class Bonsai3
 
             // why negative?
             var eulerOfs = RectifyAngleDifference(new Vector3(ofsPitch, ofsRoll, ofsYaw));
-            var eulerOfsRot = Quaternion.Euler(eulerOfs);
-            //var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
-            //body.angularVelocity = torque3;
-            //body.maxAngularVelocity = torque3.magnitude;
+            var eulerOfsRot = Quaternion.Euler(-eulerOfs);
 
-            var torque4 = CalcTorqueTowards4(body, bodyParent, eulerOfsRot);
-            body.AddTorque(torque4 * 0.1f, ForceMode.Acceleration);
-            //body.angularVelocity = torque4;
-            //body.maxAngularVelocity = torque4.magnitude;
+            /*
+            forward = dir;
+            right = Vector3.Cross(p.transform.up, forward);
+            up = Vector3.Cross(forward, right);
+            rotSrc = Quaternion.LookRotation(forward, up);
+            rotDst = Quaternion.LookRotation(p.transform.forward, p.transform.up);
+
+            var torquePitch = rotDst.eulerAngles.x - rotSrc.eulerAngles.x;
+            var torqueYaw = rotDst.eulerAngles.y - rotSrc.eulerAngles.y;
+            var torqueRoll = rotDst.eulerAngles.z - rotSrc.eulerAngles.z;
+
+            Debug.LogFormat("torque: pitch: {0}, yaw: {1}, roll: {2}", torquePitch, torqueYaw, torqueRoll);
+            */
+
+            //var torque2 = CalcTorqueTowards2(body, bodyParent, eulerOfsRot);
+            //body.AddTorque(torque2);
+
+            var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
+            body.angularVelocity = torque3;
+            body.maxAngularVelocity = torque3.magnitude;
+
+            //var torque4 = CalcTorqueTowards4(body, bodyParent, eulerOfsRot);
+            //body.AddTorque(torque4 * 0.1f, ForceMode.Acceleration);
+
+            //var torque5 = CalcTorqueTowards5(body, bodyParent, eulerOfsRot);
+            //body.AddTorque(torque5, ForceMode.Acceleration);
+
+            //var uangleDiffForward = Vector3.Angle(body.transform.forward, forward);
+            //var uangleDiffRight = Vector3.Angle(body.transform.right, right);
+            //var uangleDiffUp = Vector3.Angle(body.transform.up, up);
+
+            //var angleDiffForward = AngleSigned(body.transform.forward, forward, Vector3.forward);
+            //var angleDiffRight = AngleSigned(body.transform.right, right, Vector3.right);
+            //var angleDiffUp = AngleSigned(body.transform.up, up, Vector3.up);
+            //var angleDiffForward = 
+            //Debug.LogFormat("anglediff: fwd: {0}({1}), right: {2}({3}), up: {4}({5})", (int)angleDiffForward, (int)uangleDiffForward, (int)angleDiffRight, (int)uangleDiffRight, (int)angleDiffUp, (int)uangleDiffUp);
+            //var torquePitchSign = Mathf.Sign(Vector3.Dot(
+            //var torquePitch = right * angleDiffUp;
+            //var torquePitch = right * angleDiffUp;
+            //if (Input.GetKey(KeyCode.LeftShift))
+                //body.AddRelativeTorque(torquePitch * 0.1f);
+
+            //var lookOfs = (targetPos + bodyParent.transform.forward) - body.position;
+            //var lookAngle = Vector3.Angle(body.transform.up, lookOfs);
+            //var cross = Vector3.Cross(body.transform.up, lookOfs);
+            //body.AddTorque(cross * lookAngle * 0.1f); 
+
+            //var lookOfs2 = (targetPos + bodyParent.transform.forward) - body.position;
+            //var lookAngle2 = Vector3.Angle(body.transform.up, lookOfs);
+            //var cross2 = Vector3.Cross(body.transform.up, lookOfs);
+            //body.AddTorque(cross * lookAngle * 0.1f); 
+
+            //Vector3 targetDelta = target.position - transform.position;
+            //float angleDiff = Vector3.Angle(transform.up, targetDelta);
+
+            // get its cross product, which is the axis of rotation to
+            // get from one vector to the other
+            //Vector3 cross = Vector3.Cross(transform.up, targetDelta);
+
+            // apply torque along that axis according to the magnitude of the angle.
+            //rigidbody.AddTorque(cross.z * angleDiff * force);
 
             Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
             Debug.DrawLine(transform.position, transform.position + right, Color.red);
