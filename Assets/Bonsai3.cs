@@ -262,20 +262,29 @@ public class Bonsai3
 
             if (srcAngleFlip)
             {
-                srcEulerY -= 180.0f;
-                srcEulerZ -= 180.0f;
+                srcEulerX = ((180.0f - srcEulerX) + 360.0f) % 360.0f;
+                srcEulerY = ((180.0f - srcEulerY) + 360.0f) % 360.0f; // wrong
+                srcEulerZ = ((180.0f - srcEulerZ) + 360.0f) % 360.0f; // wrong
+                //srcEulerY -= 180.0f;
+                //srcEulerZ -= 180.0f;
             }
 
             if (dstAngleFlip)
             {
-                dstEulerY -= 180.0f;
-                dstEulerZ -= 180.0f;
+                dstEulerX = ((180.0f - dstEulerX) + 360.0f) % 360.0f;
+                dstEulerY = ((180.0f - dstEulerY) + 360.0f) % 360.0f; // wrong
+                dstEulerZ = ((180.0f - dstEulerZ) + 360.0f) % 360.0f; // wrong
+                //dstEulerY -= 180.0f;
+                //dstEulerZ -= 180.0f;
             }
 
             // how do we get rotation around euler, we need angle between each axis and the target
             var angleDiffX = Mathf.DeltaAngle(srcEulerX, dstEulerX);
             var angleDiffY = Mathf.DeltaAngle(srcEulerY, dstEulerY);
             var angleDiffZ = Mathf.DeltaAngle(srcEulerZ, dstEulerZ);
+            //var angleDiffX = dstEulerX - srcEulerX;
+            //var angleDiffY = dstEulerY - srcEulerY;
+            //var angleDiffZ = dstEulerZ - srcEulerZ;
 
             //Debug.LogFormat("src: {0},{1},{2}; dst: {3},{4},{5}, flip: src: {6}, dst: {7}",
                 //(int)srcEulerX, (int)srcEulerY, (int)srcEulerZ, (int)dstEulerX, (int)dstEulerY, (int)dstEulerZ, srcAngleFlip, dstAngleFlip);
@@ -383,7 +392,7 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
+        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
         //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, (Vector3.up + Vector3.right).normalized, 0.5f, 0.0f);
 
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
