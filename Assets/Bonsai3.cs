@@ -131,9 +131,6 @@ public class Bonsai3
         if (angdiff.x > 180) angdiff.x -= 360;
         if (angdiff.y > 180) angdiff.y -= 360;
         if (angdiff.z > 180) angdiff.z -= 360;
-        if (angdiff.x < 180) angdiff.x += 360;
-        if (angdiff.y < 180) angdiff.y += 360;
-        if (angdiff.z < 180) angdiff.z += 360;
         return angdiff;
     }
 
@@ -244,10 +241,49 @@ public class Bonsai3
             var targetRot = bodyParent.rotation * rotOfs;
 
             body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
-            body.MoveRotation(targetRot);
+            //body.MoveRotation(targetRot);
 
             axis.transform.position = body.position;
             axis.transform.rotation = targetRot;
+
+            var srcEuler = body.rotation.eulerAngles;
+            var dstEuler = targetRot.eulerAngles;
+
+            var srcEulerX = srcEuler.x;
+            var srcEulerY = srcEuler.y;
+            var srcEulerZ = srcEuler.z;
+
+            var dstEulerX = dstEuler.x;
+            var dstEulerY = dstEuler.y;
+            var dstEulerZ = dstEuler.z;
+
+            var srcAngleFlip = Vector3.Dot(body.rotation * Vector3.up, Vector3.up) < 0.0f;
+            var dstAngleFlip = Vector3.Dot(targetRot * Vector3.up, Vector3.up) < 0.0f;
+
+            if (srcAngleFlip)
+            {
+                srcEulerY -= 180.0f;
+                srcEulerZ -= 180.0f;
+            }
+
+            if (dstAngleFlip)
+            {
+                dstEulerY -= 180.0f;
+                dstEulerZ -= 180.0f;
+            }
+
+            // how do we get rotation around euler, we need angle between each axis and the target
+            var angleDiffX = Mathf.DeltaAngle(srcEulerX, dstEulerX);
+            var angleDiffY = Mathf.DeltaAngle(srcEulerY, dstEulerY);
+            var angleDiffZ = Mathf.DeltaAngle(srcEulerZ, dstEulerZ);
+
+            //Debug.LogFormat("src: {0},{1},{2}; dst: {3},{4},{5}, flip: src: {6}, dst: {7}",
+                //(int)srcEulerX, (int)srcEulerY, (int)srcEulerZ, (int)dstEulerX, (int)dstEulerY, (int)dstEulerZ, srcAngleFlip, dstAngleFlip);
+            //Debug.LogFormat("> diff: {0}, {1}, {2}", angleDiffX, angleDiffY, angleDiffZ);
+
+            var torqueDir = new Vector3(angleDiffX, angleDiffY, angleDiffZ).normalized;
+            var torque = torqueDir * 2.5f;
+            body.AddTorque(torque, ForceMode.Acceleration);
 
             Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
             Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
