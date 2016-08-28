@@ -218,7 +218,11 @@ public class Bonsai3
 
         Debug.LogFormat("upward: {0}", upward);
 
-        var rotOfs = Quaternion.LookRotation(dir, bodyParent.rotation * Vector3.up);
+        var dirOfs = dir;
+        var rotOfs = Quaternion.LookRotation(dirOfs, bodyParent.rotation * Vector3.up);
+
+        // but we want to remove the parent rotation since it should be just an offset
+        rotOfs = Quaternion.Inverse(bodyParent.rotation) * rotOfs;
 
         var rotOfsSrcEuler = bodyParent.rotation.eulerAngles;
         var rotOfsDstEuler = rotOfs.eulerAngles;
@@ -229,16 +233,25 @@ public class Bonsai3
         
         Debug.LogFormat("parent: {0}, x:{1},y:{2},z:{3}", p.name, (int)ofsEulerX, (int)ofsEulerY, (int)ofsEulerZ);
 
+        var axis = AxisHelper.Create();
+
+        axis.transform.localScale = Vector3.one * 1.25f;
+
         while (true)
         {
             Debug.DrawLine(transform.position, transform.position + rotOfs * Vector3.forward * 1.25f, Color.white);
 
-            body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
-            body.MoveRotation(rotOfs);
+            var targetRot = bodyParent.rotation * rotOfs;
 
-            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * rotOfs * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
-            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * rotOfs * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
-            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * rotOfs * Vector3.up * 0.7f, Color.green + Color.white * 0.5f);
+            body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
+            body.MoveRotation(targetRot);
+
+            axis.transform.position = body.position;
+            axis.transform.rotation = targetRot;
+
+            Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
+            Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
+            Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.up * 0.7f, Color.green + Color.white * 0.5f);
 
             Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.forward, Color.blue);
             Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.right, Color.red);
@@ -334,7 +347,7 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 10.0f, 0.0f);
+        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
         //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, (Vector3.up + Vector3.right).normalized, 0.5f, 0.0f);
 
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
