@@ -207,6 +207,52 @@ public class Bonsai3
     {
         parent = p;
 
+        var body = GetComponent<Rigidbody>();
+        var bodyParent = parent.GetComponent<Rigidbody>();
+
+        // get offset of dir to original rotation
+        var upward = Vector3.Project(bodyParent.rotation * Vector3.up, Vector3.up).normalized;
+        var invalid = upward.sqrMagnitude < Vector3.kEpsilon;
+        if (invalid)
+            upward = Vector3.up;
+
+        Debug.LogFormat("upward: {0}", upward);
+
+        var rotOfs = Quaternion.LookRotation(dir, bodyParent.rotation * Vector3.up);
+
+        var rotOfsSrcEuler = bodyParent.rotation.eulerAngles;
+        var rotOfsDstEuler = rotOfs.eulerAngles;
+
+        var ofsEulerX = Mathf.DeltaAngle(rotOfsSrcEuler.x, rotOfsDstEuler.x);
+        var ofsEulerY = Mathf.DeltaAngle(rotOfsSrcEuler.y, rotOfsDstEuler.y);
+        var ofsEulerZ = Mathf.DeltaAngle(rotOfsSrcEuler.z, rotOfsDstEuler.z);
+
+        Debug.LogFormat("parent: {0}, x:{1},y:{2},z:{3}", p.name, (int)ofsEulerX, (int)ofsEulerY, (int)ofsEulerZ);
+
+        while (true)
+        {
+            Debug.DrawLine(transform.position, transform.position + rotOfs * Vector3.forward * 1.25f, Color.white);
+
+            body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
+            body.MoveRotation(bodyParent.rotation * rotOfs);
+
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.forward, Color.blue);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.right, Color.red);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.up, Color.green);
+
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.forward, Color.blue);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.right, Color.red);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.up, Color.green);
+
+            yield return null;
+        }
+    }
+
+
+    public IEnumerator DoAttachmentOld(GameObject p, Vector3 ofs, Vector3 dir)
+    {
+        parent = p;
+
         var forward = dir;
         var right = Vector3.Cross(p.transform.up, forward);
         var up = Vector3.Cross(forward, right);
@@ -214,13 +260,11 @@ public class Bonsai3
         var upBase = up;
         var upFlip = Vector3.Dot(upBase, Vector3.up) < 0.0f;
 
-        Debug.Log(Vector3.Dot(upBase, Vector3.up));
         if (upFlip)
         {
             GetComponentInChildren<Renderer>().material.color = Color.blue;
-            //right = -right;
+            up = -up;
         }
-
 
         var rotSrc = Quaternion.LookRotation(forward, up);
         var rotDst = Quaternion.LookRotation(p.transform.forward, p.transform.up);
@@ -245,7 +289,6 @@ public class Bonsai3
         
         while (true)
         {
-            ofs = new Vector3(0, 1, 1);
             var ofsLocal = bodyParent.rotation * ofs;
             var targetPos = bodyParent.position + ofsLocal;
             var targetRot = Quaternion.LookRotation(forward, up);
@@ -263,74 +306,12 @@ public class Bonsai3
             body.AddForce(moveForce, ForceMode.Acceleration);
 
             // why negative?
-            var eulerOfs = RectifyAngleDifference(new Vector3(ofsPitch, ofsRoll, ofsYaw));
-            var eulerOfsRot = Quaternion.Euler(-eulerOfs);
+            //var eulerOfs = RectifyAngleDifference(new Vector3(ofsPitch, ofsRoll, ofsYaw));
+            //var eulerOfsRot = Quaternion.Euler(-eulerOfs);
 
-            /*
-            forward = dir;
-            right = Vector3.Cross(p.transform.up, forward);
-            up = Vector3.Cross(forward, right);
-            rotSrc = Quaternion.LookRotation(forward, up);
-            rotDst = Quaternion.LookRotation(p.transform.forward, p.transform.up);
-
-            var torquePitch = rotDst.eulerAngles.x - rotSrc.eulerAngles.x;
-            var torqueYaw = rotDst.eulerAngles.y - rotSrc.eulerAngles.y;
-            var torqueRoll = rotDst.eulerAngles.z - rotSrc.eulerAngles.z;
-
-            Debug.LogFormat("torque: pitch: {0}, yaw: {1}, roll: {2}", torquePitch, torqueYaw, torqueRoll);
-            */
-
-            //var torque2 = CalcTorqueTowards2(body, bodyParent, eulerOfsRot);
-            //body.AddTorque(torque2);
-
-            var torque3 = CalcTorqueTowards3(body, bodyParent, eulerOfsRot);
-            body.angularVelocity = torque3;
-            body.maxAngularVelocity = torque3.magnitude;
-
-            //var torque4 = CalcTorqueTowards4(body, bodyParent, eulerOfsRot);
-            //body.AddTorque(torque4 * 0.1f, ForceMode.Acceleration);
-
-            //var torque5 = CalcTorqueTowards5(body, bodyParent, eulerOfsRot);
-            //body.AddTorque(torque5, ForceMode.Acceleration);
-
-            //var uangleDiffForward = Vector3.Angle(body.transform.forward, forward);
-            //var uangleDiffRight = Vector3.Angle(body.transform.right, right);
-            //var uangleDiffUp = Vector3.Angle(body.transform.up, up);
-
-            //var angleDiffForward = AngleSigned(body.transform.forward, forward, Vector3.forward);
-            //var angleDiffRight = AngleSigned(body.transform.right, right, Vector3.right);
-            //var angleDiffUp = AngleSigned(body.transform.up, up, Vector3.up);
-            //var angleDiffForward = 
-            //Debug.LogFormat("anglediff: fwd: {0}({1}), right: {2}({3}), up: {4}({5})", (int)angleDiffForward, (int)uangleDiffForward, (int)angleDiffRight, (int)uangleDiffRight, (int)angleDiffUp, (int)uangleDiffUp);
-            //var torquePitchSign = Mathf.Sign(Vector3.Dot(
-            //var torquePitch = right * angleDiffUp;
-            //var torquePitch = right * angleDiffUp;
-            //if (Input.GetKey(KeyCode.LeftShift))
-                //body.AddRelativeTorque(torquePitch * 0.1f);
-
-            //var lookOfs = (targetPos + bodyParent.transform.forward) - body.position;
-            //var lookAngle = Vector3.Angle(body.transform.up, lookOfs);
-            //var cross = Vector3.Cross(body.transform.up, lookOfs);
-            //body.AddTorque(cross * lookAngle * 0.1f); 
-
-            //var lookOfs2 = (targetPos + bodyParent.transform.forward) - body.position;
-            //var lookAngle2 = Vector3.Angle(body.transform.up, lookOfs);
-            //var cross2 = Vector3.Cross(body.transform.up, lookOfs);
-            //body.AddTorque(cross * lookAngle * 0.1f); 
-
-            //Vector3 targetDelta = target.position - transform.position;
-            //float angleDiff = Vector3.Angle(transform.up, targetDelta);
-
-            // get its cross product, which is the axis of rotation to
-            // get from one vector to the other
-            //Vector3 cross = Vector3.Cross(transform.up, targetDelta);
-
-            // apply torque along that axis according to the magnitude of the angle.
-            //rigidbody.AddTorque(cross.z * angleDiff * force);
-
-            Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
-            Debug.DrawLine(transform.position, transform.position + right, Color.red);
-            Debug.DrawLine(transform.position, transform.position + up, Color.green);
+            Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward, Color.blue);
+            Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right, Color.red);
+            Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.up, Color.green);
 
             //Debug.DrawLine(transform.position, transform.position + forward, Color.blue);
             //Debug.DrawLine(transform.position, transform.position + right, Color.red);
@@ -353,9 +334,9 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f); // pyr=-331,0,0
-        dir = Quaternion.Euler(-40.0f, 0.0f, 0.0f) *
-            transform.rotation * Vector3.forward;
+        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f);
+        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, (Vector3.up + Vector3.right).normalized, 0.5f, 0.0f);
+
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
         //dir = Vector3.RotateTowards(Vector3.right, Vector3.up, 0.5f, 0.0f); // pyr=0,-28,0
 
