@@ -234,11 +234,11 @@ public class Bonsai3
             Debug.DrawLine(transform.position, transform.position + rotOfs * Vector3.forward * 1.25f, Color.white);
 
             body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
-            body.MoveRotation(bodyParent.rotation * rotOfs);
+            body.MoveRotation(rotOfs);
 
-            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.forward, Color.blue);
-            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.right, Color.red);
-            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.up, Color.green);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * rotOfs * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * rotOfs * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
+            Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * rotOfs * Vector3.up * 0.7f, Color.green + Color.white * 0.5f);
 
             Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.forward, Color.blue);
             Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.right, Color.red);
@@ -334,7 +334,7 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, 0.5f, 0.0f);
+        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 10.0f, 0.0f);
         //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, (Vector3.up + Vector3.right).normalized, 0.5f, 0.0f);
 
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
