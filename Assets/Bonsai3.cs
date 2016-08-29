@@ -296,6 +296,53 @@ public class Bonsai3
             axis.transform.position = body.position;
             axis.transform.rotation = targetRot;
 
+            // get spherical coords
+
+            var eulerX = Mathf.DeltaAngle(axis.transform.rotation.eulerAngles.x, body.transform.rotation.eulerAngles.x);
+            var eulerY = Mathf.DeltaAngle(axis.transform.rotation.eulerAngles.y, body.transform.rotation.eulerAngles.y);
+            var eulerZ = Mathf.DeltaAngle(axis.transform.rotation.eulerAngles.z, body.transform.rotation.eulerAngles.z);
+
+            // check flip 2 axis at a time
+            var flipPitch = Vector3.Dot(axis.transform.forward, Vector3.forward) < 0.0f && Vector3.Dot(axis.transform.up, Vector3.up) < 0.0f;
+            var flipYaw = Vector3.Dot(axis.transform.forward, Vector3.forward) < 0.0f && Vector3.Dot(axis.transform.right, Vector3.right) < 0.0f;
+            var flipRoll = Vector3.Dot(axis.transform.up, Vector3.up) < 0.0f && Vector3.Dot(axis.transform.right, Vector3.right) < 0.0f;
+
+            if ((flipPitch || flipRoll) && !flipYaw)
+            {
+                //angle = (angle + 180.0f) % 360.0f;
+                //eulerY = (eulerY + 180.0f) % 360.0f;
+                //eulerZ = (eulerZ + 180.0f) % 360.0f;
+            }
+            else if (flipRoll)
+            {
+                //eulerY = (eulerY + 180.0f) % 360.0f;
+                //eulerZ = (eulerZ + 180.0f) % 360.0f;
+                //azimuth = (azimuth + 180.0f) % 360.0f;
+                //angle = (angle + 180.0f) % 360.0f;
+                //roll = (roll + 180.0f) % 360.0f;
+            }
+
+            Debug.LogFormat("angle: {0}, {1}, {2}, flip: {3}, {4}, {5}", (int)eulerX, (int)eulerY, (int)eulerZ, flipPitch, flipYaw, flipRoll);
+
+
+            /* fail #552344123
+            var targetLocalEulerX = axis.transform.localRotation.eulerAngles.x;
+            var targetLocalEulerY = axis.transform.localRotation.eulerAngles.y;
+            var targetLocalEulerZ = axis.transform.localRotation.eulerAngles.z;
+
+            var currLocalEulerX = body.transform.rotation.eulerAngles.x;
+            var currLocalEulerY = body.transform.rotation.eulerAngles.y;
+            var currLocalEulerZ = body.transform.rotation.eulerAngles.z;
+
+            var angleOfsX = PosNegAngle(axis.transform.forward, body.transform.forward, Vector3.right);
+            var angleOfsY = PosNegAngle(axis.transform.forward, body.transform.forward, Vector3.up);
+            var angleOfsZ = PosNegAngle(axis.transform.up, body.transform.up, Vector3.forward);
+
+            var localTorque = new Vector3(angleOfsX, angleOfsY, angleOfsZ);
+            //body.AddRelativeTorque(localTorque * -0.1f);
+            */
+
+            /*
             var srcEuler = body.rotation.eulerAngles;
             var dstEuler = targetRot.eulerAngles;
 
@@ -326,6 +373,7 @@ public class Bonsai3
             Debug.DrawLine(srcPos, srcPos + ofsLook * Vector3.forward, Color.cyan);
 
             Debug.LogFormat("ofsEuler: {0}, {1}, {2}; flip: {3}", (int)ofsLookEulerX, (int)ofsLookEulerY, (int)ofsLookEulerZ, flipped);
+            */
 
             // get the rotation of src on the dst axis
             /*
