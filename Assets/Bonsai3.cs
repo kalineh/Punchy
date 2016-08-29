@@ -296,8 +296,26 @@ public class Bonsai3
             axis.transform.position = body.position;
             axis.transform.rotation = targetRot;
 
+            {
+                var x = Vector3.Cross(body.transform.forward.normalized, axis.transform.forward.normalized);
+                float theta = Mathf.Asin(x.magnitude);
+                var w = x.normalized * theta / Time.fixedDeltaTime;
+                var q = axis.transform.rotation * body.inertiaTensorRotation;
+                var t = q * Vector3.Scale(body.inertiaTensor, Quaternion.Inverse(q) * w);
+                body.AddTorque(t * 3.8f - body.angularVelocity, ForceMode.Acceleration);
+            }
+            {
+                var x = Vector3.Cross(body.transform.right.normalized, axis.transform.right.normalized);
+                float theta = Mathf.Asin(x.magnitude);
+                var w = x.normalized * theta / Time.fixedDeltaTime;
+                var q = axis.transform.rotation * body.inertiaTensorRotation;
+                var t = q * Vector3.Scale(body.inertiaTensor, Quaternion.Inverse(q) * w);
+                body.AddTorque(t * 3.8f - body.angularVelocity, ForceMode.Acceleration);
+            }
+
             // get spherical coords
 
+            /*
             var eulerX = Mathf.DeltaAngle(axis.transform.rotation.eulerAngles.x, body.transform.rotation.eulerAngles.x);
             var eulerY = Mathf.DeltaAngle(axis.transform.rotation.eulerAngles.y, body.transform.rotation.eulerAngles.y);
             var eulerZ = Mathf.DeltaAngle(axis.transform.rotation.eulerAngles.z, body.transform.rotation.eulerAngles.z);
@@ -323,6 +341,7 @@ public class Bonsai3
             }
 
             Debug.LogFormat("angle: {0}, {1}, {2}, flip: {3}, {4}, {5}", (int)eulerX, (int)eulerY, (int)eulerZ, flipPitch, flipYaw, flipRoll);
+            */
 
 
             /* fail #552344123
@@ -525,7 +544,7 @@ public class Bonsai3
 
         ofs = Vector3.forward * 1.25f;
         dir = Vector3.forward;
-        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
+        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
         //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, (Vector3.up + Vector3.right).normalized, 0.5f, 0.0f);
 
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
