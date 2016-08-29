@@ -200,6 +200,56 @@ public class Bonsai3
             Vector3.Dot(v1, v2)) * Mathf.Rad2Deg;
     }
 
+
+    static float GetPitch(Quaternion rotation)
+    {
+        var dir = rotation * Vector3.forward;
+        var angle = Mathf.Atan2(dir.y, dir.z);
+        return angle * Mathf.Rad2Deg;
+    }
+
+    static float GetYaw(Quaternion rotation)
+    {
+        var dir = rotation * Vector3.forward;
+        var angle = Mathf.Atan2(dir.x, dir.z);
+        return angle * Mathf.Rad2Deg;
+    }
+
+    static float GetRoll(Quaternion rotation)
+    {
+        var dir = rotation * Vector3.right;
+        var angle = Mathf.Atan2(dir.y, dir.x);
+        return angle * Mathf.Rad2Deg;
+    }
+
+    static float GetPitch360(Quaternion rotation)
+    {
+        var rot = GetPitch(rotation);
+        if (rot < 0) rot += 360.0f;
+        return rot;
+    }
+
+    static float GetYaw360(Quaternion rotation)
+    {
+        var rot = GetYaw(rotation);
+        if (rot < 0) rot += 360.0f;
+        return rot;
+    }
+
+    static float GetRoll360(Quaternion rotation)
+    {
+        var rot = GetRoll(rotation);
+        if (rot < 0) rot += 360.0f;
+        return rot;
+    }
+
+    public float PosNegAngle(Vector3 a1, Vector3 a2, Vector3 normal)
+    {
+        float angle = Vector3.Angle(a1, a2);
+        float sign = Mathf.Sign(Vector3.Dot(normal, Vector3.Cross(a1, a2)));
+        return angle * sign;
+    }
+
     public IEnumerator DoAttachment(GameObject p, Vector3 ofs, Vector3 dir)
     {
         parent = p;
@@ -216,10 +266,10 @@ public class Bonsai3
         Debug.LogFormat("upward: {0}", upward);
 
         var dirOfs = dir;
-        var rotOfs = Quaternion.LookRotation(dirOfs, bodyParent.rotation * Vector3.up);
+        var rotOfsWithParent = Quaternion.LookRotation(dirOfs, bodyParent.rotation * Vector3.up);
 
         // but we want to remove the parent rotation since it should be just an offset
-        rotOfs = Quaternion.Inverse(bodyParent.rotation) * rotOfs;
+        var rotOfs = Quaternion.Inverse(bodyParent.rotation) * rotOfsWithParent;
 
         var rotOfsSrcEuler = bodyParent.rotation.eulerAngles;
         var rotOfsDstEuler = rotOfs.eulerAngles;
@@ -249,6 +299,58 @@ public class Bonsai3
             var srcEuler = body.rotation.eulerAngles;
             var dstEuler = targetRot.eulerAngles;
 
+            var srcRot = body.rotation;
+            var dstRot = targetRot;
+
+            var srcPos = bodyParent.position;
+            var dstPos = bodyParent.position + targetRot * Vector3.forward;
+            var ofsLook = Quaternion.LookRotation(dstPos - srcPos, Vector3.up);
+
+            var flipped = Vector3.Dot(bodyParent.rotation * Vector3.forward, Vector3.forward) < 0.0f;
+
+            var ofsLookEuler = ofsLook.eulerAngles;
+            var ofsLookEulerX = ofsLookEuler.x;
+            var ofsLookEulerY = ofsLookEuler.y;
+            var ofsLookEulerZ = ofsLookEuler.z;
+
+            if (flipped)
+            {
+                if (ofsLookEulerX > 270.0f && ofsLookEulerX <= 360.0f)
+                    ofsLookEulerX = (270.0f + (270.0f - ofsLookEulerX)) % 360.0f;
+                if (ofsLookEulerX < 90.0f && ofsLookEulerX >= 0.0f)
+                    ofsLookEulerX = (90.0f + (90.0f - ofsLookEulerX)) % 360.0f;
+
+                ofsLookEulerY = (ofsLookEulerY + 180.0f) % 360.0f;
+            }
+
+            Debug.DrawLine(srcPos, srcPos + ofsLook * Vector3.forward, Color.cyan);
+
+            Debug.LogFormat("ofsEuler: {0}, {1}, {2}; flip: {3}", (int)ofsLookEulerX, (int)ofsLookEulerY, (int)ofsLookEulerZ, flipped);
+
+            // get the rotation of src on the dst axis
+            /*
+            var srcForward = srcRot * Vector3.forward;
+            var srcRight = srcRot * Vector3.right;
+            var srcUp = srcRot * Vector3.up;
+
+            var dstForward = dstRot * Vector3.forward;
+            var dstRight = dstRot * Vector3.right;
+            var dstUp = dstRot * Vector3.up;
+
+            var srcForwardPlanar = Vector3.ProjectOnPlane(srcForward, dstRight);
+            var srcRightPlanar = Vector3.ProjectOnPlane(srcRight, dstForward);
+            var srcUpPlanar = Vector3.ProjectOnPlane(srcUp, dstRight);
+
+            var srcAngleX = PosNegAngle(srcForwardPlanar, dstForward, dstRight);
+            var srcAngleY = PosNegAngle(srcRightPlanar, dstRight, dstForward);
+            var srcAngleZ = PosNegAngle(srcUpPlanar, dstUp, dstRight);
+
+            Debug.LogFormat("src: x: {0}, y: {1}, z: {2}", srcAngleX, srcAngleY, srcAngleZ);
+            */
+
+            // get euler manually
+            /*
+
             var srcEulerX = srcEuler.x;
             var srcEulerY = srcEuler.y;
             var srcEulerZ = srcEuler.z;
@@ -257,26 +359,8 @@ public class Bonsai3
             var dstEulerY = dstEuler.y;
             var dstEulerZ = dstEuler.z;
 
-            var srcAngleFlip = Vector3.Dot(body.rotation * Vector3.up, Vector3.up) < 0.0f;
-            var dstAngleFlip = Vector3.Dot(targetRot * Vector3.up, Vector3.up) < 0.0f;
-
-            if (srcAngleFlip)
-            {
-                srcEulerX = ((180.0f - srcEulerX) + 360.0f) % 360.0f;
-                srcEulerY = ((180.0f - srcEulerY) + 360.0f) % 360.0f; // wrong
-                srcEulerZ = ((180.0f - srcEulerZ) + 360.0f) % 360.0f; // wrong
-                //srcEulerY -= 180.0f;
-                //srcEulerZ -= 180.0f;
-            }
-
-            if (dstAngleFlip)
-            {
-                dstEulerX = ((180.0f - dstEulerX) + 360.0f) % 360.0f;
-                dstEulerY = ((180.0f - dstEulerY) + 360.0f) % 360.0f; // wrong
-                dstEulerZ = ((180.0f - dstEulerZ) + 360.0f) % 360.0f; // wrong
-                //dstEulerY -= 180.0f;
-                //dstEulerZ -= 180.0f;
-            }
+            var srcAngleFlip = false;
+            var dstAngleFlip = false;
 
             // how do we get rotation around euler, we need angle between each axis and the target
             var angleDiffX = Mathf.DeltaAngle(srcEulerX, dstEulerX);
@@ -286,13 +370,14 @@ public class Bonsai3
             //var angleDiffY = dstEulerY - srcEulerY;
             //var angleDiffZ = dstEulerZ - srcEulerZ;
 
-            //Debug.LogFormat("src: {0},{1},{2}; dst: {3},{4},{5}, flip: src: {6}, dst: {7}",
-                //(int)srcEulerX, (int)srcEulerY, (int)srcEulerZ, (int)dstEulerX, (int)dstEulerY, (int)dstEulerZ, srcAngleFlip, dstAngleFlip);
-            //Debug.LogFormat("> diff: {0}, {1}, {2}", angleDiffX, angleDiffY, angleDiffZ);
+            Debug.LogFormat("src: {0},{1},{2}; dst: {3},{4},{5}, flip: src: {6}, dst: {7}",
+                (int)srcEulerX, (int)srcEulerY, (int)srcEulerZ, (int)dstEulerX, (int)dstEulerY, (int)dstEulerZ, srcAngleFlip, dstAngleFlip);
 
             var torqueDir = new Vector3(angleDiffX, angleDiffY, angleDiffZ).normalized;
             var torque = torqueDir * 2.5f;
-            body.AddTorque(torque, ForceMode.Acceleration);
+            //body.AddTorque(torque, ForceMode.Acceleration);
+            //Debug.LogFormat("> diff: {0}, {1}, {2}", angleDiffX, angleDiffY, angleDiffZ);
+            */
 
             Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
             Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
