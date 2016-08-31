@@ -70,6 +70,10 @@ public class Bonsai3
         //var axis = AxisHelper.Create();
         //axis.transform.localScale = Vector3.one * 1.25f;
 
+        body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
+        body.MoveRotation(bodyParent.rotation * baseRotOfs);
+
+
         while (true)
         {
             Debug.DrawLine(transform.position, transform.position + baseRotOfs * Vector3.forward * 1.25f, Color.white);
@@ -92,12 +96,21 @@ public class Bonsai3
             //body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
             //body.MoveRotation(targetRot);
 
+            var dt = Time.deltaTime;
+            if (dt <= 0.0f)
+            {
+                yield return null;
+                continue;
+            }
+
             var moveOfs = targetPos - body.position;
             var moveDir = moveOfs.SafeNormalize();
             var moveLen = moveOfs.SafeMagnitude();
-            var moveForce = moveDir * Mathf.Pow(moveLen, 1.3f) * 30.0f;
+            var moveForce = moveDir * Mathf.Pow(moveLen, 1.1f) * 150.0f;
 
             body.AddForce(moveForce * Time.deltaTime);
+           
+            var torque = Vector3.zero;
 
             var rotForward = targetRot * Vector3.forward;
             var rotRight = targetRot * Vector3.right;
@@ -114,9 +127,6 @@ public class Bonsai3
             bodyForward = bodyForward.SafeNormalizeOr(Vector3.forward);
             bodyRight = bodyRight.SafeNormalizeOr(Vector3.right);
             bodyUp = bodyUp.SafeNormalizeOr(Vector3.up);
-
-            var dt = Time.fixedDeltaTime;
-            var torque = Vector3.zero;
 
             var forwardAxis = Vector3.Cross(bodyForward, rotForward);
             var forwardTheta = Mathf.Asin(forwardAxis.SafeMagnitude());
@@ -137,8 +147,9 @@ public class Bonsai3
             var upTorque = upBasis * Vector3.Scale(body.inertiaTensor, Quaternion.Inverse(upBasis) * upAngle);
 
             torque = forwardTorque + rightTorque + upTorque;
+            torque = torque * 1.5f;
 
-            body.AddTorque(torque - body.angularVelocity, ForceMode.Acceleration);
+            body.AddTorque(torque, ForceMode.Acceleration);
 
             yield return null;
         }
@@ -150,12 +161,14 @@ public class Bonsai3
         var obj = GameObject.Instantiate(resource);
         var branch = obj.GetComponent<Bonsai3>();
 
-        var ofs = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 0.5f, 0.0f);
-        var dir = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 0.5f, 0.0f);
+        var ofs = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 1.2f, 0.0f);
+        var dir = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 1.2f, 0.0f);
 
-        ofs = Vector3.forward * 1.25f;
-        dir = Vector3.forward;
-        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
+        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * Random.Range(5.0f, 15.0f), 0.0f);
+
+        //ofs = Vector3.forward * 1.25f;
+        //dir = Vector3.forward;
+        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * 45.0f, 0.0f);
         //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, (Vector3.up + Vector3.right).normalized, 0.5f, 0.0f);
 
         //dir = Vector3.RotateTowards(Vector3.forward, Vector3.right, 0.5f, 0.0f); // pyr=0,-28,0
