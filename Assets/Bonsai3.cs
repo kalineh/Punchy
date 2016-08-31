@@ -80,13 +80,28 @@ public class Bonsai3
         body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
         body.MoveRotation(bodyParent.rotation * baseRotOfs);
 
+        var cube = transform.FindChild("Cube");
+
+        cube.transform.position = body.position;
+        cube.transform.rotation = body.rotation;
+        cube.transform.localScale = Vector3.zero;
 
         while (true)
         {
             Debug.DrawLine(transform.position, transform.position + baseRotOfs * Vector3.forward * 1.25f, Color.white);
 
+            var bodyPos = body.position;
+            var bodyRot = body.rotation;
+
             var targetPos = bodyParent.position + bodyParent.rotation * ofs;
             var targetRot = bodyParent.rotation * baseRotOfs;
+
+            cube.transform.position = (bodyPos + targetPos) * 0.5f;
+            cube.transform.rotation = targetRot;
+            cube.transform.localScale = new Vector3(0.1f,
+                (targetPos - bodyParent.position).SafeMagnitude(),
+                0.1f
+            );
 
             //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
             //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
@@ -110,7 +125,7 @@ public class Bonsai3
                 continue;
             }
 
-            var moveOfs = targetPos - body.position;
+            var moveOfs = targetPos - bodyPos;
             var moveDir = moveOfs.SafeNormalize();
             var moveLen = moveOfs.SafeMagnitude();
 
@@ -129,9 +144,9 @@ public class Bonsai3
             rotRight = rotRight.SafeNormalizeOr(Vector3.right);
             rotUp = rotUp.SafeNormalizeOr(Vector3.up);
 
-            var bodyForward = body.rotation * Vector3.forward;
-            var bodyRight = body.rotation * Vector3.right;
-            var bodyUp = body.rotation * Vector3.up;
+            var bodyForward = bodyRot * Vector3.forward;
+            var bodyRight = bodyRot * Vector3.right;
+            var bodyUp = bodyRot * Vector3.up;
 
             bodyForward = bodyForward.SafeNormalizeOr(Vector3.forward);
             bodyRight = bodyRight.SafeNormalizeOr(Vector3.right);
@@ -157,6 +172,13 @@ public class Bonsai3
 
             torque = forwardTorque + rightTorque + upTorque;
             torque = torque * TorqueForce;
+
+            // TODO: fix
+            if (float.IsNaN(torque.x) || float.IsNaN(torque.y) || float.IsNaN(torque.z))
+            {
+                yield return null;
+                continue;
+            }
 
             body.AddTorque(torque, ForceMode.Acceleration);
             bodyParent.AddTorque(torque * BackTorque, ForceMode.Acceleration);
