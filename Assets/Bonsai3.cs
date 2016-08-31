@@ -38,6 +38,9 @@ public class Bonsai3
     public float MovePower;
     public float TorqueForce;
 
+    public float BackMoveForce;
+    public float BackTorque;
+
     public void Start()
     {
         OnScriptReload();
@@ -114,6 +117,7 @@ public class Bonsai3
             var moveForce = moveDir * Mathf.Pow(moveLen, MovePower) * MoveForce;
 
             body.AddForce(moveForce * Time.deltaTime);
+            bodyParent.AddForce(moveForce * Time.deltaTime * BackMoveForce);
            
             var torque = Vector3.zero;
 
@@ -155,6 +159,7 @@ public class Bonsai3
             torque = torque * TorqueForce;
 
             body.AddTorque(torque, ForceMode.Acceleration);
+            bodyParent.AddTorque(torque * BackTorque, ForceMode.Acceleration);
 
             yield return null;
         }
