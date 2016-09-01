@@ -20,6 +20,8 @@ public class Bonsai3Editor
             bonsai.MakeBranch();
         if (GUILayout.Button("AutoGrow"))
             bonsai.StartAutoGrow();
+        if (GUILayout.Button("AutoTree"))
+            bonsai.StartAutoTree("root", 0);
         if (GUILayout.Button("Stop All Coroutines"))
             bonsai.StopAllCoroutines();
     }
@@ -33,6 +35,9 @@ public class Bonsai3
     : MonoBehaviour
 {
     public GameObject parent;
+
+    public float LimitForce;
+    public float LimitTorque;
 
     public float MoveForce;
     public float MovePower;
@@ -139,6 +144,8 @@ public class Bonsai3
 
             var moveForce = moveDir * Mathf.Pow(moveLen, MovePower) * MoveForce;
 
+            moveForce = Vector3.ClampMagnitude(moveForce, LimitForce);
+
             body.AddForce(moveForce * Time.deltaTime);
             bodyParent.AddForce(moveForce * Time.deltaTime * BackMoveForce);
            
@@ -188,6 +195,8 @@ public class Bonsai3
                 continue;
             }
 
+            torque = Vector3.ClampMagnitude(torque, LimitTorque);
+
             body.AddTorque(torque, ForceMode.Acceleration);
             bodyParent.AddTorque(torque * BackTorque, ForceMode.Acceleration);
 
@@ -201,10 +210,10 @@ public class Bonsai3
         var obj = GameObject.Instantiate(resource);
         var branch = obj.GetComponent<Bonsai3>();
 
-        var ofs = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 1.2f, 0.0f);
-        var dir = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 1.2f, 0.0f);
+        var ofs = Vector3.RotateTowards(Random.onUnitSphere, Vector3.up, 2.0f, 0.0f);
+        var dir = Vector3.RotateTowards(Random.onUnitSphere, Vector3.forward, 1.2f, 0.0f);
 
-        dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * Random.Range(5.0f, 15.0f), 0.0f);
+        //dir = transform.rotation * Vector3.RotateTowards(Vector3.forward, Vector3.up, Mathf.Deg2Rad * Random.Range(5.0f, 15.0f), 0.0f);
 
         //ofs = Vector3.forward * 1.25f;
         //dir = Vector3.forward;
@@ -229,5 +238,24 @@ public class Bonsai3
     {
         yield return new WaitForSeconds(1.0f);
         obj.GetComponent<Bonsai3>().StartAutoGrow();
+    }
+
+    public void StartAutoTree(string name, int depth)
+    {
+        StartCoroutine(DoAutoTreeSingle(gameObject, depth));
+    }
+
+    public IEnumerator DoAutoTreeSingle(GameObject obj, int depth)
+    {
+        yield return new WaitForSeconds(0.5f);
+
+        var layers = Random.Range(2, 5) - depth;
+        for (int i = 0; i < layers; ++i)
+        {
+            var branch = MakeBranch();
+            var name = string.Format("Branch{0}.{1}", depth, i);
+            branch.GetComponent<Bonsai3>().StartAutoTree(name, depth + 1);
+            yield return new WaitForSeconds(0.3f);
+        }
     }
 }
