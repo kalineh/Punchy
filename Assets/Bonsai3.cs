@@ -81,27 +81,35 @@ public class Bonsai3
         body.MoveRotation(bodyParent.rotation * baseRotOfs);
 
         var cube = transform.FindChild("Cube");
+        var parentTip = bodyParent.transform.FindChild("Cube/Tip");
 
-        cube.transform.position = body.position;
-        cube.transform.rotation = body.rotation;
-        cube.transform.localScale = Vector3.zero;
+        if (body.isKinematic == false)
+        {
+            //cube.transform.position = body.position;
+            //cube.transform.rotation = body.rotation;
+            //cube.transform.localScale = Vector3.zero;
+        }
 
         while (true)
         {
-            Debug.DrawLine(transform.position, transform.position + baseRotOfs * Vector3.forward * 1.25f, Color.white);
-
             var bodyPos = body.position;
             var bodyRot = body.rotation;
 
             var targetPos = bodyParent.position + bodyParent.rotation * ofs;
             var targetRot = bodyParent.rotation * baseRotOfs;
 
-            cube.transform.position = (bodyPos + targetPos) * 0.5f;
-            cube.transform.rotation = targetRot;
-            cube.transform.localScale = new Vector3(0.1f,
-                (targetPos - bodyParent.position).SafeMagnitude(),
-                0.1f
-            );
+            if (body.isKinematic == false)
+            {
+                var parentTipPos = parentTip.transform.position;
+                var parentTipPosOfs = (parentTipPos - targetPos);
+                var parentTipPosLen = parentTipPosOfs.SafeMagnitude();
+
+                //Debug.DrawLine(transform.position, parentTipPos, Color.blue);
+
+                cube.transform.position = (parentTipPos + targetPos) * 0.5f;
+                cube.transform.localScale = new Vector3(0.1f, parentTipPosLen, 0.1f);
+                cube.transform.rotation = Quaternion.LookRotation(parentTipPosOfs.SafeNormalize(), Vector3.up) * Quaternion.Euler(-90.0f, 0.0f, 0.0f);
+            }
 
             //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
             //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
