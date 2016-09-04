@@ -17,6 +17,7 @@ public class Bonsai3Editor
     private float overrideMoveForce = 750.0f;
     private float overrideMovePower = 0.8f;
     private float overrideMoveLerp = 0.05f;
+    private float overrideTorqueLerp = 0.05f;
     private float overrideTorqueForce = 5.0f;
     private float overrideBackMoveForce = 0.0f;
     private float overrideBackTorque = 0.0f;
@@ -33,11 +34,29 @@ public class Bonsai3Editor
             bonsai.StartAutoGrow();
         if (GUILayout.Button("AutoTree"))
             bonsai.StartAutoTree("root", 0);
+        if (GUILayout.Button("AutoTreeUp"))
+            bonsai.StartAutoTreeUp("root", 8);
         if (GUILayout.Button("Stop All Coroutines"))
             bonsai.StopAllCoroutines();
 
         EditorGUILayout.Separator();
+
+        var wasOverride = overridePhysics;
         overridePhysics = GUILayout.Toggle(overridePhysics, "Override Physics");
+
+        if (!wasOverride && overridePhysics)
+        {
+            overrideMass = bonsai.GetComponent<Rigidbody>().mass;
+            overrideDrag = bonsai.GetComponent<Rigidbody>().mass;
+            overrideAngularDrag = bonsai.GetComponent<Rigidbody>().mass;
+            overrideMoveForce = bonsai.MoveForce;
+            overrideMovePower = bonsai.MovePower;
+            overrideMoveLerp = bonsai.MoveLerp;
+            overrideTorqueLerp = bonsai.TorqueLerp;
+            overrideTorqueForce = bonsai.TorqueForce;
+            overrideBackMoveForce = bonsai.BackMoveForce;
+            overrideBackTorque = bonsai.BackTorque;
+        }
 
         if (overridePhysics)
         {
@@ -47,6 +66,7 @@ public class Bonsai3Editor
             overrideMoveForce = EditorGUILayout.FloatField("Move Force", overrideMoveForce);
             overrideMovePower = EditorGUILayout.FloatField("Move Power", overrideMovePower);
             overrideMoveLerp = EditorGUILayout.FloatField("Move Lerp", overrideMoveLerp);
+            overrideTorqueLerp = EditorGUILayout.FloatField("Torque Lerp", overrideTorqueLerp);
             overrideTorqueForce = EditorGUILayout.FloatField("Torque Force", overrideTorqueForce);
             overrideBackMoveForce = EditorGUILayout.FloatField("Back Move Force", overrideBackMoveForce);
             overrideBackTorque = EditorGUILayout.FloatField("Back Torque", overrideBackTorque);
@@ -63,6 +83,7 @@ public class Bonsai3Editor
                 b.MoveForce = overrideMoveForce;
                 b.MovePower = overrideMovePower;
                 b.MoveLerp = overrideMoveLerp;
+                b.TorqueLerp = overrideTorqueLerp;
                 b.TorqueForce = overrideTorqueForce;
                 b.BackMoveForce = overrideBackMoveForce;
                 b.BackTorque = overrideBackTorque;
@@ -87,6 +108,7 @@ public class Bonsai3
     public float MovePower;
     public float MoveLerp;
     public float TorqueForce;
+    public float TorqueLerp;
 
     public float BackMoveForce;
     public float BackTorque;
@@ -189,7 +211,6 @@ public class Bonsai3
             body.MovePosition(Vector3.Lerp(body.position, targetPos, MoveLerp));
            
             body.AddForce(moveForce, ForceMode.Force);
-            bodyParent.AddForce(moveForce * BackMoveForce, ForceMode.Force);
 
             var torque = Vector3.zero;
 
@@ -239,11 +260,35 @@ public class Bonsai3
 
             torque = Vector3.ClampMagnitude(torque, LimitTorque);
 
+            body.MoveRotation(Quaternion.Lerp(body.rotation, targetRot, TorqueLerp));
             body.AddTorque(torque, ForceMode.Force);
-            bodyParent.AddTorque(torque * BackTorque, ForceMode.Force);
+
+            //bodyParent.AddForceAtPosition(body.velocity * BackMoveForce, body.position, ForceMode.Force);
+            //bodyParent.AddTorque(body.angularVelocity * BackTorque, ForceMode.Force);
+
+            var velSelf = body.velocity;
+            var velParent = bodyParent.velocity;
+            var avelSelf = body.angularVelocity;
+            var avelParent = bodyParent.angularVelocity;
+
+            body.velocity = Vector3.Lerp(velSelf, velParent, BackMoveForce);
+            body.angularVelocity = Vector3.Lerp(avelSelf, avelParent, BackTorque);
+            bodyParent.velocity = Vector3.Lerp(velParent, velSelf, BackMoveForce);
+            bodyParent.angularVelocity = Vector3.Lerp(avelParent, avelSelf, BackTorque);
 
             yield return new WaitForFixedUpdate();
         }
+    }
+
+    public GameObject MakeBranchOfsDir(Vector3 ofs, Vector3 dir)
+    {
+        var resource = Resources.Load<GameObject>("Bonsai3");
+        var obj = GameObject.Instantiate(resource);
+        var branch = obj.GetComponent<Bonsai3>();
+
+        branch.Attach(gameObject, ofs, dir);
+
+        return obj;
     }
 
     public GameObject MakeBranch()
@@ -282,6 +327,21 @@ public class Bonsai3
         obj.GetComponent<Bonsai3>().StartAutoGrow();
     }
 
+    public void StartAutoTreeUp(string name, int depth)
+    {
+        StartCoroutine(DoAutoTreeSingleUp(gameObject, depth));
+    }
+
+    public IEnumerator DoAutoTreeSingleUp(GameObject obj, int depth)
+    {
+        while (depth > 0)
+        {
+            var branch = obj.GetComponent<Bonsai3>().MakeBranchOfsDir(Vector3.up * 0.5f, Vector3.up);
+            yield return new WaitForSeconds(0.5f);
+            obj = branch.gameObject;
+            depth--;
+        }
+    }
     public void StartAutoTree(string name, int depth)
     {
         StartCoroutine(DoAutoTreeSingle(gameObject, depth));

@@ -20,6 +20,9 @@ public class PhysicsGrabber
                 var b = info.collider.gameObject.GetComponent<Rigidbody>();
                 if (b)
                     StartCoroutine(DoHit(b, p, f));
+                var bp = info.collider.gameObject.GetComponentInParent<Rigidbody>();
+                if (bp)
+                    StartCoroutine(DoHit(bp, p, f));
             }
         }
     }
