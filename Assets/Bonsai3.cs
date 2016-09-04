@@ -10,6 +10,17 @@ using UnityEditor;
 public class Bonsai3Editor
     : Editor
 {
+    private bool overridePhysics = false;
+    private float overrideMass = 1.0f;
+    private float overrideDrag = 1.0f;
+    private float overrideAngularDrag = 1.0f;
+    private float overrideMoveForce = 750.0f;
+    private float overrideMovePower = 0.8f;
+    private float overrideMoveLerp = 0.05f;
+    private float overrideTorqueForce = 5.0f;
+    private float overrideBackMoveForce = 0.0f;
+    private float overrideBackTorque = 0.0f;
+
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
@@ -24,6 +35,39 @@ public class Bonsai3Editor
             bonsai.StartAutoTree("root", 0);
         if (GUILayout.Button("Stop All Coroutines"))
             bonsai.StopAllCoroutines();
+
+        EditorGUILayout.Separator();
+        overridePhysics = GUILayout.Toggle(overridePhysics, "Override Physics");
+
+        if (overridePhysics)
+        {
+            overrideMass = EditorGUILayout.FloatField("Mass", overrideMass);
+            overrideDrag = EditorGUILayout.FloatField("Drag", overrideDrag);
+            overrideAngularDrag = EditorGUILayout.FloatField("Angular Drag", overrideAngularDrag);
+            overrideMoveForce = EditorGUILayout.FloatField("Move Force", overrideMoveForce);
+            overrideMovePower = EditorGUILayout.FloatField("Move Power", overrideMovePower);
+            overrideMoveLerp = EditorGUILayout.FloatField("Move Lerp", overrideMoveLerp);
+            overrideTorqueForce = EditorGUILayout.FloatField("Torque Force", overrideTorqueForce);
+            overrideBackMoveForce = EditorGUILayout.FloatField("Back Move Force", overrideBackMoveForce);
+            overrideBackTorque = EditorGUILayout.FloatField("Back Torque", overrideBackTorque);
+
+            var bonsais = FindObjectsOfType<Bonsai3>();
+            foreach (var b in bonsais)
+            {
+                var rb = b.GetComponent<Rigidbody>();
+
+                rb.mass = overrideMass;
+                rb.drag = overrideDrag;
+                rb.angularDrag = overrideAngularDrag;
+
+                b.MoveForce = overrideMoveForce;
+                b.MovePower = overrideMovePower;
+                b.MoveLerp = overrideMoveLerp;
+                b.TorqueForce = overrideTorqueForce;
+                b.BackMoveForce = overrideBackMoveForce;
+                b.BackTorque = overrideBackTorque;
+            }
+        }
     }
 }
 
@@ -41,6 +85,7 @@ public class Bonsai3
 
     public float MoveForce;
     public float MovePower;
+    public float MoveLerp;
     public float TorqueForce;
 
     public float BackMoveForce;
@@ -131,12 +176,7 @@ public class Bonsai3
             //body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
             //body.MoveRotation(targetRot);
 
-            var dt = Time.deltaTime;
-            if (dt <= 0.0f)
-            {
-                yield return null;
-                continue;
-            }
+            var dt = Time.fixedDeltaTime;
 
             var moveOfs = targetPos - bodyPos;
             var moveDir = moveOfs.SafeNormalize();
@@ -146,9 +186,11 @@ public class Bonsai3
 
             moveForce = Vector3.ClampMagnitude(moveForce, LimitForce);
 
-            body.AddForce(moveForce * Time.deltaTime);
-            bodyParent.AddForce(moveForce * Time.deltaTime * BackMoveForce);
+            body.MovePosition(Vector3.Lerp(body.position, targetPos, MoveLerp));
            
+            body.AddForce(moveForce, ForceMode.Force);
+            bodyParent.AddForce(moveForce * BackMoveForce, ForceMode.Force);
+
             var torque = Vector3.zero;
 
             var rotForward = targetRot * Vector3.forward;
@@ -191,16 +233,16 @@ public class Bonsai3
             // TODO: fix
             if (float.IsNaN(torque.x) || float.IsNaN(torque.y) || float.IsNaN(torque.z))
             {
-                yield return null;
+                yield return new WaitForFixedUpdate();
                 continue;
             }
 
             torque = Vector3.ClampMagnitude(torque, LimitTorque);
 
-            body.AddTorque(torque, ForceMode.Acceleration);
-            bodyParent.AddTorque(torque * BackTorque, ForceMode.Acceleration);
+            body.AddTorque(torque, ForceMode.Force);
+            bodyParent.AddTorque(torque * BackTorque, ForceMode.Force);
 
-            yield return null;
+            yield return new WaitForFixedUpdate();
         }
     }
 
