@@ -22,6 +22,8 @@ public class Bonsai4Editor
             bonsai.StartCoroutine(Bonsai4Builder.DoBuildOneUp(bonsai.gameObject, "OneUp"));
         if (GUILayout.Button("MakeCross"))
             bonsai.StartCoroutine(Bonsai4Builder.DoBuildCross(bonsai.gameObject, "Cross"));
+        if (GUILayout.Button("MakeTree"))
+            bonsai.StartCoroutine(Bonsai4Builder.DoBuildTree(bonsai.gameObject, "Tree"));
     }
 }
 

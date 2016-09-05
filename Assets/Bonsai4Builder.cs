@@ -62,4 +62,31 @@ public class Bonsai4Builder
         }
     }
 
+    public static IEnumerator DoBuildTree(GameObject root, string name, int depth = 0, int maxDepth = 8)
+    {
+        if (depth >= maxDepth)
+            yield break;
+
+        var src = Bonsai4Settings.Get("Bonsai4SettingsSrc");
+        var dst = Bonsai4Settings.Get("Bonsai4SettingsDst");
+
+        var parent = root;
+        var branches = Random.Range(1, 4);
+        var t = 1.0f / (float)maxDepth * (float)depth;
+
+        for (int i = 0; i < branches; ++i)
+        {
+            var settings = Bonsai4Settings.Lerp(src, dst, t);
+            var branch = Bonsai4.MakeBranch(settings);
+
+            var ofs = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, Random.Range(0.2f, 0.5f), 0.0f);
+            var dir = ofs.SafeNormalize();
+
+            branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));
+            branch.StartCoroutine(DoBuildTree(branch.gameObject, string.Format("branch{0}.{1}", depth.ToString(), i.ToString()), depth + 1, maxDepth));
+
+            yield return new WaitForSeconds(0.25f);
+        }
+    }
+
 }
