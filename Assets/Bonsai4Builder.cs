@@ -84,7 +84,7 @@ public class Bonsai4Builder
             var settings = Bonsai4Settings.Lerp(src, dst, t);
             var branch = Bonsai4.MakeBranch(settings);
 
-            var ofs = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, Random.Range(0.2f, 0.5f), 0.0f) * (1.2f + (t * 0.3f));
+            var ofs = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, Random.Range(0.2f, 0.5f), 0.0f) * (0.6f + (t * 0.4f));
             var dir = ofs.SafeNormalize();
 
             branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));

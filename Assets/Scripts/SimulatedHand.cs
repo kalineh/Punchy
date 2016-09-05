@@ -93,7 +93,7 @@ public class SimulatedHand
         for (int i = 0; i < touching.Length; ++i)
         {
             var obj = touching[i];
-            if (obj.name != "Leaf")
+            if (!obj.GetComponentInParent<Bonsai4>())
                 continue;
 
             var ofs = obj.transform.position - transform.position;
@@ -173,7 +173,25 @@ public class SimulatedHand
             yield return null;
         }
 
-        nearest.GetComponentInParent<BonsaiBranch>().MakeBranchFromTo(nearestPoint, shadow.transform.position);
+        var nearestBranch = nearest.GetComponentInParent<Bonsai4>();
+        var branchDepth = nearestBranch.depth + 1;
+
+        var settingsT = Mathf.Clamp01(1.0f / 10.0f * (float)branchDepth);
+        var settingsSrc = Bonsai4Settings.Get("Bonsai4SettingsSrc");
+        var settingsDst = Bonsai4Settings.Get("Bonsai4SettingsDst");
+        var settings = Bonsai4Settings.Lerp(settingsSrc, settingsDst, settingsT);
+
+        var branch = Bonsai4.MakeBranch(settings);
+
+        var branchOfs = shadow.transform.position - nearestPoint;
+        var branchDir = branchOfs.SafeNormalize();
+
+        branch.depth = branchDepth;
+
+        Destroy(settingsSrc.gameObject);
+        Destroy(settingsDst.gameObject);
+
+        branch.StartCoroutine(branch.DoAttachment(nearestBranch.gameObject, branchOfs, branchDir));
 
         Destroy(pullObj);
     }

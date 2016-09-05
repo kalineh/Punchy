@@ -34,6 +34,7 @@ public class Bonsai4
     : MonoBehaviour
 {
     public Bonsai4Settings settings;
+    public int depth = 0;
 
     public static Bonsai4 MakeBranch(Bonsai4Settings settings = null)
     {
