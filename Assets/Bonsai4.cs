@@ -210,6 +210,8 @@ public class Bonsai4
             body.MoveRotation(Quaternion.Lerp(body.rotation, targetRot, settings.TorqueLerp));
             body.AddTorque(torque, ForceMode.Force);
 
+            // need to lerp/damp stronger when too much torque
+
             //bodyParent.AddForceAtPosition(body.velocity * BackMoveForce, body.position, ForceMode.Force);
             //bodyParent.AddTorque(body.angularVelocity * BackTorque, ForceMode.Force);
 
