@@ -106,12 +106,12 @@ public class Bonsai4
             var targetPos = bodyParent.position + bodyParent.rotation * ofs;
             var targetRot = bodyParent.rotation * baseRotOfs;
 
+            var parentTipPos = parentTip.transform.position;
+            var parentTipPosOfs = (parentTipPos - targetPos);
+            var parentTipPosLen = parentTipPosOfs.SafeMagnitude();
+
             if (body.isKinematic == false)
             {
-                var parentTipPos = parentTip.transform.position;
-                var parentTipPosOfs = (parentTipPos - targetPos);
-                var parentTipPosLen = parentTipPosOfs.SafeMagnitude();
-
                 //Debug.DrawLine(transform.position, parentTipPos, Color.blue);
 
                 cube.transform.position = (parentTipPos + targetPos) * 0.5f;
@@ -147,6 +147,10 @@ public class Bonsai4
             body.MovePosition(Vector3.Lerp(body.position, targetPos, settings.MoveLerp));
            
             body.AddForce(moveForce, ForceMode.Force);
+
+            var contractForce = parentTipPosOfs * settings.ContractForce;
+
+            body.AddForce(contractForce, ForceMode.Force);
 
             var torque = Vector3.zero;
 

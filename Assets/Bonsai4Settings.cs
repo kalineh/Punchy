@@ -49,6 +49,8 @@ public class Bonsai4Settings
         result.Drag = Mathf.Lerp(src.Drag, dst.Drag, t);
         result.AngularDrag = Mathf.Lerp(src.AngularDrag, dst.AngularDrag, t);
 
+        result.ContractForce = Mathf.Lerp(src.ContractForce, dst.ContractForce, t);
+
         return result;
     }
 
@@ -67,4 +69,6 @@ public class Bonsai4Settings
     public float Mass;
     public float Drag;
     public float AngularDrag;
+
+    public float ContractForce;
 }
