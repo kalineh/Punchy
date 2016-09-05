@@ -154,6 +154,7 @@ public class Bonsai4
             var overflow = moveOfs.SafeMagnitude();
             var overflowFactor = Mathf.Clamp01((overflow - overflowLower) / (overflowUpper - overflowLower));
             body.MovePosition(Vector3.Lerp(body.position, targetPos, overflowFactor));
+            body.velocity = Vector3.Lerp(body.velocity, Vector3.zero, overflowFactor);
 
             body.AddForce(moveForce, ForceMode.Force);
 

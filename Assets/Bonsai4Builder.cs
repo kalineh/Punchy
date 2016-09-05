@@ -67,11 +67,13 @@ public class Bonsai4Builder
         if (depth >= maxDepth)
             yield break;
 
+        yield return new WaitForSeconds(0.15f);
+
         var src = Bonsai4Settings.Get("Bonsai4SettingsSrc");
         var dst = Bonsai4Settings.Get("Bonsai4SettingsDst");
 
         var parent = root;
-        var branches = Random.Range(1, 4);
+        var branches = Random.Range(1, 3) - depth / 3;
         var t = 1.0f / (float)maxDepth * (float)depth;
 
         for (int i = 0; i < branches; ++i)
@@ -85,7 +87,7 @@ public class Bonsai4Builder
             branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));
             branch.StartCoroutine(DoBuildTree(branch.gameObject, string.Format("branch{0}.{1}", depth.ToString(), i.ToString()), depth + 1, maxDepth));
 
-            yield return new WaitForSeconds(0.25f);
+            yield return new WaitForSeconds(0.05f);
         }
     }
 
