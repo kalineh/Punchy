@@ -98,6 +98,9 @@ public class Bonsai4
             //cube.transform.localScale = Vector3.zero;
         }
 
+        var overflowLower = ofs.SafeMagnitude() * settings.OverflowLerpFactorLower;
+        var overflowUpper = ofs.SafeMagnitude() * settings.OverflowLerpFactorUpper;
+
         while (true)
         {
             var bodyPos = body.position;
@@ -145,7 +148,11 @@ public class Bonsai4
             moveForce = Vector3.ClampMagnitude(moveForce, settings.LimitForce);
 
             body.MovePosition(Vector3.Lerp(body.position, targetPos, settings.MoveLerp));
-           
+
+            var overflow = moveOfs.SafeMagnitude();
+            var overflowFactor = Mathf.Clamp01((overflow - overflowLower) / (overflowUpper - overflowLower));
+            body.MovePosition(Vector3.Lerp(body.position, targetPos, overflowFactor));
+
             body.AddForce(moveForce, ForceMode.Force);
 
             var contractForce = parentTipPosOfs * settings.ContractForce;

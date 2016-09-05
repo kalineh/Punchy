@@ -50,6 +50,8 @@ public class Bonsai4Settings
         result.AngularDrag = Mathf.Lerp(src.AngularDrag, dst.AngularDrag, t);
 
         result.ContractForce = Mathf.Lerp(src.ContractForce, dst.ContractForce, t);
+        result.OverflowLerpFactorLower = Mathf.Lerp(src.OverflowLerpFactorLower, dst.OverflowLerpFactorLower, t);
+        result.OverflowLerpFactorUpper = Mathf.Lerp(src.OverflowLerpFactorUpper, dst.OverflowLerpFactorUpper, t);
 
         return result;
     }
@@ -71,4 +73,6 @@ public class Bonsai4Settings
     public float AngularDrag;
 
     public float ContractForce;
+    public float OverflowLerpFactorLower;
+    public float OverflowLerpFactorUpper;
 }

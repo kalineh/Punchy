@@ -36,7 +36,7 @@ public class Bonsai4Builder
         var settings = Bonsai4Settings.Get("Bonsai4SettingsSrc");
         var branch = Bonsai4.MakeBranch(settings);
 
-        var ofs = Vector3.up;
+        var ofs = Vector3.up * 5.0f;
         var dir = Vector3.up;
 
         branch.StartCoroutine(branch.DoAttachment(root, ofs, dir));
