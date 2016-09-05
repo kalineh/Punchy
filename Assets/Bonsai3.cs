@@ -36,6 +36,8 @@ public class Bonsai3Editor
             bonsai.StartAutoTree("root", 0);
         if (GUILayout.Button("AutoTreeUp"))
             bonsai.StartAutoTreeUp("root", 8);
+        if (GUILayout.Button("Wobble"))
+            bonsai.StartWobble();
         if (GUILayout.Button("Stop All Coroutines"))
             bonsai.StopAllCoroutines();
 
@@ -358,6 +360,28 @@ public class Bonsai3
             var name = string.Format("Branch{0}.{1}", depth, i);
             branch.GetComponent<Bonsai3>().StartAutoTree(name, depth + 1);
             yield return new WaitForSeconds(0.3f);
+        }
+    }
+
+    public void StartWobble()
+    {
+        StartCoroutine(DoWobble());
+    }
+
+    public IEnumerator DoWobble()
+    {
+        var r = transform.rotation;
+        var r0 = Quaternion.FromToRotation(transform.up, transform.right);
+        var r1 = Quaternion.FromToRotation(transform.up, -transform.right);
+
+        while (true)
+        {
+            var t = Mathf.Abs(Mathf.Sin(Time.time * 1.5f)) * 0.5f;
+            var q = Quaternion.Slerp(r0, r1, t);
+
+            transform.rotation = Quaternion.Slerp(transform.rotation, q, 0.1f);
+
+            yield return new WaitForFixedUpdate();
         }
     }
 }
