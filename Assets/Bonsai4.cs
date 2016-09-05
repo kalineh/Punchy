@@ -67,6 +67,9 @@ public class Bonsai4
         body.drag = settings.Drag;
         body.angularDrag = settings.AngularDrag;
 
+        // dir is the 'up' direction, so rotate to match
+        dir = Quaternion.Euler(90.0f, 0.0f, 0.0f) * dir;
+
         var baseRotOfsWithParent = Quaternion.LookRotation(dir, bodyParent.rotation * Vector3.up);
         var baseRotOfs = Quaternion.Inverse(bodyParent.rotation) * baseRotOfsWithParent;
 
@@ -75,7 +78,7 @@ public class Bonsai4
         //var ofsEulerX = Mathf.DeltaAngle(rotOfsSrcEuler.x, rotOfsDstEuler.x);
         //var ofsEulerY = Mathf.DeltaAngle(rotOfsSrcEuler.y, rotOfsDstEuler.y);
         //var ofsEulerZ = Mathf.DeltaAngle(rotOfsSrcEuler.z, rotOfsDstEuler.z);
-        //Debug.LogFormat("parent: {0}, x:{1},y:{2},z:{3}", p.name, (int)ofsEulerX, (int)ofsEulerY, (int)ofsEulerZ);
+        //Debug.LogFormat("parent: {0}, x:{1},y:{2},z:{3}", parent.name, (int)ofsEulerX, (int)ofsEulerY, (int)ofsEulerZ);
 
         //var axis = AxisHelper.Create();
         //axis.transform.localScale = Vector3.one * 1.25f;
