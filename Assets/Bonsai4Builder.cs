@@ -43,4 +43,23 @@ public class Bonsai4Builder
 
         yield return new WaitForSeconds(0.25f);
     }
+
+    public static IEnumerator DoBuildCross(GameObject root, string name)
+    {
+        var parent = root;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            var settings = Bonsai4Settings.Get("Bonsai4SettingsSrc");
+            var branch = Bonsai4.MakeBranch(settings);
+
+            var ofs = Quaternion.Euler(45.0f, i * 90.0f, 0.0f) * Vector3.up;
+            var dir = ofs;
+
+            branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));
+
+            yield return new WaitForSeconds(0.05f);
+        }
+    }
+
 }
