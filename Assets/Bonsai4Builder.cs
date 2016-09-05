@@ -30,4 +30,17 @@ public class Bonsai4Builder
             yield return new WaitForSeconds(0.25f);
         }
     }
+
+    public static IEnumerator DoBuildOneUp(GameObject root, string name)
+    {
+        var settings = Bonsai4Settings.Get("Bonsai4SettingsSrc");
+        var branch = Bonsai4.MakeBranch(settings);
+
+        var ofs = Vector3.up;
+        var dir = Vector3.up;
+
+        branch.StartCoroutine(branch.DoAttachment(root, ofs, dir));
+
+        yield return new WaitForSeconds(0.25f);
+    }
 }

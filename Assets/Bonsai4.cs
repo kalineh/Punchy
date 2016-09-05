@@ -17,9 +17,9 @@ public class Bonsai4Editor
         var bonsai = target as Bonsai4;
 
         if (GUILayout.Button("MakeTower"))
-        {
             bonsai.StartCoroutine(Bonsai4Builder.DoBuildTower(bonsai.gameObject, "Tower"));
-        }
+        if (GUILayout.Button("MakeOneUp"))
+            bonsai.StartCoroutine(Bonsai4Builder.DoBuildOneUp(bonsai.gameObject, "OneUp"));
     }
 }
 
