@@ -57,7 +57,7 @@ public class Bonsai4
     {
     }
 
-    public IEnumerator DoAttachment(GameObject parent, Vector3 ofs, Vector3 dir)
+    public IEnumerator DoAttachment(GameObject parent, Vector3 attachSrc, Vector3 attachDst)
     {
         if (settings == null)
         {
@@ -72,10 +72,15 @@ public class Bonsai4
         body.drag = settings.Drag;
         body.angularDrag = settings.AngularDrag;
 
-        // dir is the 'up' direction, so rotate to match
-        dir = Quaternion.Euler(90.0f, 0.0f, 0.0f) * dir;
+        var attachOfs = attachDst - attachSrc;
+        var attachDir = attachOfs.SafeNormalizeOr(Vector3.up);
 
-        var baseRotOfsWithParent = Quaternion.LookRotation(dir, bodyParent.rotation * Vector3.up);
+        // dir is the 'up' direction, so rotate to match
+        attachDir = Quaternion.Euler(90.0f, 0.0f, 0.0f) * attachDir;
+
+        var connectLocalPos = bodyParent.transform.worldToLocalMatrix * attachSrc;
+
+        var baseRotOfsWithParent = Quaternion.LookRotation(attachDir, bodyParent.rotation * Vector3.up);
         var baseRotOfs = Quaternion.Inverse(bodyParent.rotation) * baseRotOfsWithParent;
 
         //var rotOfsSrcEuler = bodyParent.rotation.eulerAngles;
@@ -88,11 +93,13 @@ public class Bonsai4
         //var axis = AxisHelper.Create();
         //axis.transform.localScale = Vector3.one * 1.25f;
 
-        body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
+        body.MovePosition(attachSrc + attachOfs.SafeNormalize() * attachOfs.SafeMagnitude() * 0.5f);
         body.MoveRotation(bodyParent.rotation * baseRotOfs);
 
         var cube = transform.FindChild("Cube");
         var parentTip = bodyParent.transform.FindChild("Cube/Tip");
+        var localAttachSrc = bodyParent.transform.InverseTransformPoint(attachSrc);
+        var localAttachDst = bodyParent.transform.InverseTransformPoint(attachDst);
 
         if (body.isKinematic == false)
         {
@@ -101,28 +108,42 @@ public class Bonsai4
             //cube.transform.localScale = Vector3.zero;
         }
 
-        var overflowLower = ofs.SafeMagnitude() * settings.OverflowLerpFactorLower;
-        var overflowUpper = ofs.SafeMagnitude() * settings.OverflowLerpFactorUpper;
+        var overflowLower = attachOfs.SafeMagnitude() * settings.OverflowLerpFactorLower;
+        var overflowUpper = attachOfs.SafeMagnitude() * settings.OverflowLerpFactorUpper;
+
+        var uniqueColor = ColorExtensions.RandomColor();
+        var drawDebug = false;
 
         while (true)
         {
             var bodyPos = body.position;
             var bodyRot = body.rotation;
 
-            var targetPos = bodyParent.position + bodyParent.rotation * ofs;
+            var targetSrcPos = bodyParent.transform.TransformPoint(localAttachSrc);
+            var targetDstPos = bodyParent.transform.TransformPoint(localAttachDst);
+
+            var targetSrcToDst = (targetDstPos - targetSrcPos);
+            var targetCenterPos = (targetSrcPos + targetDstPos) * 0.5f;
             var targetRot = bodyParent.rotation * baseRotOfs;
 
-            var parentTipPos = parentTip.transform.position;
-            var parentTipPosOfs = (parentTipPos - targetPos);
-            var parentTipPosLen = parentTipPosOfs.SafeMagnitude();
+            //Debug.LogFormat("{0}: local: src: {1}, dst: {2}; target: src: {3}, dst: {4}", body.name, localAttachSrc, localAttachDst, targetSrcPos, targetDstPos);
+
+            if (drawDebug)
+            {
+                GetComponentInChildren<Renderer>().enabled = false;
+                Debug.DrawLine(targetSrcPos, targetDstPos, uniqueColor.Blink());
+            }
 
             if (body.isKinematic == false)
             {
-                //Debug.DrawLine(transform.position, parentTipPos, Color.blue);
+                var tipToDst = (targetDstPos - parentTip.position);
+                cube.transform.position = parentTip.position + tipToDst * 0.5f;
+                cube.transform.localScale = new Vector3(0.1f, tipToDst.SafeMagnitude(), 0.1f);
+                cube.transform.rotation = Quaternion.LookRotation(tipToDst.SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
 
-                cube.transform.position = (parentTipPos + targetPos) * 0.5f;
-                cube.transform.localScale = new Vector3(0.1f, parentTipPosLen, 0.1f);
-                cube.transform.rotation = Quaternion.LookRotation(parentTipPosOfs.SafeNormalize(), Vector3.up) * Quaternion.Euler(-90.0f, 0.0f, 0.0f);
+                //cube.transform.position = bodyParent.position + targetCenterPos;
+                //cube.transform.localScale = new Vector3(0.1f, targetSrcToDst.SafeMagnitude(), 0.1f);
+                //cube.transform.rotation = Quaternion.LookRotation(targetSrcToDst.SafeNormalize(), Vector3.up) * Quaternion.Euler(-90.0f, 0.0f, 0.0f);
             }
 
             //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
@@ -142,7 +163,7 @@ public class Bonsai4
 
             var dt = Time.fixedDeltaTime;
 
-            var moveOfs = targetPos - bodyPos;
+            var moveOfs = targetSrcPos - bodyPos;
             var moveDir = moveOfs.SafeNormalize();
             var moveLen = moveOfs.SafeMagnitude();
 
@@ -150,17 +171,17 @@ public class Bonsai4
 
             moveForce = Vector3.ClampMagnitude(moveForce, settings.LimitForce);
 
-            body.MovePosition(Vector3.Lerp(body.position, targetPos, settings.MoveLerp));
+            body.MovePosition(Vector3.Lerp(body.position, targetCenterPos, settings.MoveLerp));
 
             var overflow = moveOfs.SafeMagnitude();
             var overflowFactor = Mathf.Clamp01((overflow - overflowLower) / (overflowUpper - overflowLower));
-            body.MovePosition(Vector3.Lerp(body.position, targetPos, overflowFactor));
+            body.MovePosition(Vector3.Lerp(body.position, targetCenterPos, overflowFactor));
             body.velocity = Vector3.Lerp(body.velocity, Vector3.zero, overflowFactor);
 
             body.AddForce(moveForce, ForceMode.Force);
 
-            var contractForce = parentTipPosOfs * settings.ContractForce;
-
+            // TODO: wrong
+            var contractForce = (body.position - targetSrcPos) * settings.ContractForce;
             body.AddForce(contractForce, ForceMode.Force);
 
             var torque = Vector3.zero;

@@ -183,17 +183,24 @@ public class SimulatedHand
 
         var branch = Bonsai4.MakeBranch(settings);
 
-        var branchOfs = shadow.transform.position - nearestPoint;
-        var branchDir = branchOfs.SafeNormalize();
+        var branchSrc = nearestPoint;
+        var branchDst = shadow.transform.position;
 
         branch.depth = branchDepth;
 
         Destroy(settingsSrc.gameObject);
         Destroy(settingsDst.gameObject);
 
-        branch.StartCoroutine(branch.DoAttachment(nearestBranch.gameObject, branchOfs, branchDir));
+        branch.StartCoroutine(branch.DoAttachment(nearestBranch.gameObject, branchSrc, branchDst));
 
         Destroy(pullObj);
+
+        while (true)
+        {
+            Debug.DrawLine(shadow.transform.position, nearestPoint, Color.red);
+            Debug.DrawLine(shadow.transform.position, branchDst, Color.green);
+            yield return null;
+        }
     }
 
     public IEnumerator DoPunchRay()

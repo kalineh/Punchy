@@ -20,10 +20,11 @@ public class Bonsai4Builder
             var settings = Bonsai4Settings.Lerp(src, dst, t);
             var branch = Bonsai4.MakeBranch(settings);
 
-            var ofs = Vector3.up * (0.2f + (1.0f - t) * 0.8f);
-            var dir = Vector3.up;
+            var tip = parent.transform.FindChild("Cube/Tip").position;
+            var branchSrc = tip;
+            var branchDst = tip + Vector3.up * (0.2f + (1.0f - t) * 0.8f);
 
-            branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));
+            branch.StartCoroutine(branch.DoAttachment(parent, branchSrc, branchDst));
 
             parent = branch.gameObject;
 
@@ -39,10 +40,11 @@ public class Bonsai4Builder
         var settings = Bonsai4Settings.Get("Bonsai4SettingsSrc");
         var branch = Bonsai4.MakeBranch(settings);
 
-        var ofs = Vector3.up * 5.0f;
-        var dir = Vector3.up;
+        var tip = root.transform.FindChild("Cube/Tip").position;
+        var branchSrc = tip;
+        var branchDst = tip + Vector3.up * 1.0f;
 
-        branch.StartCoroutine(branch.DoAttachment(root, ofs, dir));
+        branch.StartCoroutine(branch.DoAttachment(root, branchSrc, branchDst));
 
         yield return new WaitForSeconds(0.25f);
     }
@@ -56,10 +58,11 @@ public class Bonsai4Builder
             var settings = Bonsai4Settings.Get("Bonsai4SettingsSrc");
             var branch = Bonsai4.MakeBranch(settings);
 
-            var ofs = Quaternion.Euler(45.0f, i * 90.0f, 0.0f) * Vector3.up;
-            var dir = ofs;
+            var tip = root.transform.FindChild("Cube/Tip").position;
+            var branchSrc = tip;
+            var branchDst = tip + Quaternion.Euler(45.0f, i * 90.0f, 0.0f) * Vector3.up;
 
-            branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));
+            branch.StartCoroutine(branch.DoAttachment(parent, branchSrc, branchDst));
 
             yield return new WaitForSeconds(0.05f);
         }
@@ -84,10 +87,12 @@ public class Bonsai4Builder
             var settings = Bonsai4Settings.Lerp(src, dst, t);
             var branch = Bonsai4.MakeBranch(settings);
 
+            var tip = parent.transform.FindChild("Cube/Tip").position;
             var ofs = Vector3.RotateTowards(Vector3.up, Random.onUnitSphere, Random.Range(0.2f, 0.5f), 0.0f) * (0.6f + (t * 0.4f));
-            var dir = ofs.SafeNormalize();
+            var branchSrc = tip;
+            var branchDst = tip + ofs;
 
-            branch.StartCoroutine(branch.DoAttachment(parent, ofs, dir));
+            branch.StartCoroutine(branch.DoAttachment(parent, branchSrc, branchDst));
             branch.StartCoroutine(DoBuildTree(branch.gameObject, string.Format("branch{0}.{1}", depth.ToString(), i.ToString()), depth + 1, maxDepth));
 
             yield return new WaitForSeconds(0.05f);
