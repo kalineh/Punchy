@@ -110,7 +110,7 @@ public class Bonsai4
         // so we need the pos relative to the TIP, because we're always attached relative to a tip
         // no we arent, because childs will be weird; but relative to tip is still always correct?
 
-        var localTipOfs = parentTip.InverseTransformPoint(attachDst);
+        var localTipOfs = attachDst - parentTip.position;
         var localAttachSrc = bodyParent.transform.InverseTransformPoint(attachSrc);
         var localAttachDst = bodyParent.transform.InverseTransformPoint(attachDst);
 
@@ -150,12 +150,9 @@ public class Bonsai4
 
             if (body.isKinematic == false)
             {
-                cube.position = targetCenterPos;
-                cube.rotation = Quaternion.LookRotation((targetCenterPos - parentTip.position).SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
-                cube.localScale = new Vector3(0.1f, (targetCenterPos - parentTip.position).SafeMagnitude() * 2.0f, 0.1f);
-
-                var tipToTarget = (targetDstPos - parentTip.position);
-                cube.position = parentTip.position + tipToTarget * 0.5f;
+                var tipAttachPoint = parentTip.position + parentTip.TransformVector(localTipOfs);
+                var tipToTarget = (targetDstPos - tipAttachPoint);
+                cube.position = tipAttachPoint + tipToTarget * 0.5f;
                 cube.rotation = Quaternion.LookRotation(tipToTarget.SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
                 cube.localScale = new Vector3(0.1f, tipToTarget.SafeMagnitude(), 0.1f);
 
