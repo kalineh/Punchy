@@ -49,9 +49,44 @@ public class Bonsai4Builder
         yield return new WaitForSeconds(0.25f);
     }
 
+    public static IEnumerator DoBuildFiveUp(GameObject root, string name)
+    {
+        var src = Bonsai4Settings.Get("Bonsai4SettingsSrc");
+        var dst = Bonsai4Settings.Get("Bonsai4SettingsDst");
+        var depth = 5;
+
+        var parent = root;
+
+        for (int i = 0; i < depth; ++i)
+        {
+            var t = 1.0f / (float)depth * (float)i;
+            var settings = Bonsai4Settings.Lerp(src, dst, t);
+            var branch = Bonsai4.MakeBranch(settings);
+
+            var tip = parent.transform.FindChild("Cube/Tip").position;
+            var branchSrc = tip;
+            var branchDst = tip + Vector3.up;
+
+            branch.StartCoroutine(branch.DoAttachment(parent, branchSrc, branchDst));
+
+            parent = branch.gameObject;
+
+            yield return new WaitForSeconds(0.25f);
+        }
+
+        Destroy(src.gameObject);
+        Destroy(dst.gameObject);
+    }
+
     public static IEnumerator DoBuildCross(GameObject root, string name)
     {
         var parent = root;
+        var angles = new Vector3[] {
+            new Vector3(+45.0f, 0.0f, 0.0f),
+            new Vector3(-45.0f, 0.0f, 0.0f),
+            new Vector3(0.0f, 0.0f, +45.0f),
+            new Vector3(0.0f, 0.0f, -45.0f),
+        };
 
         for (int i = 0; i < 4; ++i)
         {
@@ -60,7 +95,7 @@ public class Bonsai4Builder
 
             var tip = root.transform.FindChild("Cube/Tip").position;
             var branchSrc = tip;
-            var branchDst = tip + Quaternion.Euler(45.0f, i * 90.0f, 0.0f) * Vector3.up;
+            var branchDst = tip + Quaternion.Euler(angles[i]) * Vector3.up;
 
             branch.StartCoroutine(branch.DoAttachment(parent, branchSrc, branchDst));
 

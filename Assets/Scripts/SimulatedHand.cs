@@ -197,8 +197,9 @@ public class SimulatedHand
 
         while (true)
         {
-            Debug.DrawLine(shadow.transform.position, nearestPoint, Color.red);
-            Debug.DrawLine(shadow.transform.position, branchDst, Color.green);
+            Debug.DrawLine(branchSrc, branchDst, Color.white);
+            //Debug.DrawLine(shadow.transform.position, nearestPoint, Color.red);
+            //Debug.DrawLine(shadow.transform.position, branchDst, Color.green);
             yield return null;
         }
     }

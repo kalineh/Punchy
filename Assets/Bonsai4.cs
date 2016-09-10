@@ -20,6 +20,8 @@ public class Bonsai4Editor
             bonsai.StartCoroutine(Bonsai4Builder.DoBuildTower(bonsai.gameObject, "Tower"));
         if (GUILayout.Button("MakeOneUp"))
             bonsai.StartCoroutine(Bonsai4Builder.DoBuildOneUp(bonsai.gameObject, "OneUp"));
+        if (GUILayout.Button("MakeFiveUp"))
+            bonsai.StartCoroutine(Bonsai4Builder.DoBuildFiveUp(bonsai.gameObject, "FiveUp"));
         if (GUILayout.Button("MakeCross"))
             bonsai.StartCoroutine(Bonsai4Builder.DoBuildCross(bonsai.gameObject, "Cross"));
         if (GUILayout.Button("MakeTree"))
@@ -90,14 +92,25 @@ public class Bonsai4
         //var ofsEulerZ = Mathf.DeltaAngle(rotOfsSrcEuler.z, rotOfsDstEuler.z);
         //Debug.LogFormat("parent: {0}, x:{1},y:{2},z:{3}", parent.name, (int)ofsEulerX, (int)ofsEulerY, (int)ofsEulerZ);
 
-        //var axis = AxisHelper.Create();
-        //axis.transform.localScale = Vector3.one * 1.25f;
+        var axis = AxisHelper.Create();
+        axis.transform.localScale = Vector3.one * 1.25f;
 
-        body.MovePosition(attachSrc + attachOfs.SafeNormalize() * attachOfs.SafeMagnitude() * 0.5f);
+        body.MovePosition(attachSrc + attachOfs.SafeNormalize() * attachOfs.SafeMagnitude() * 1.0f);
         body.MoveRotation(bodyParent.rotation * baseRotOfs);
 
         var cube = transform.FindChild("Cube");
         var parentTip = bodyParent.transform.FindChild("Cube/Tip");
+        var selfTip = transform.FindChild("Cube/Tip");
+
+        // ok we need to get the local attach point and stick the cube to it always
+        // remember the object is moved to the ideal ofs
+        // and rotated to ideal rot, independent (will be detached)
+        // then we make the cube point from the local attach point, to the center? or the tip
+
+        // so we need the pos relative to the TIP, because we're always attached relative to a tip
+        // no we arent, because childs will be weird; but relative to tip is still always correct?
+
+        var localTipOfs = parentTip.InverseTransformPoint(attachDst);
         var localAttachSrc = bodyParent.transform.InverseTransformPoint(attachSrc);
         var localAttachDst = bodyParent.transform.InverseTransformPoint(attachDst);
 
@@ -112,7 +125,7 @@ public class Bonsai4
         var overflowUpper = attachOfs.SafeMagnitude() * settings.OverflowLerpFactorUpper;
 
         var uniqueColor = ColorExtensions.RandomColor();
-        var drawDebug = false;
+        var drawDebug = true;
 
         while (true)
         {
@@ -130,40 +143,40 @@ public class Bonsai4
 
             if (drawDebug)
             {
-                GetComponentInChildren<Renderer>().enabled = false;
-                Debug.DrawLine(targetSrcPos, targetDstPos, uniqueColor.Blink());
+                //GetComponentInChildren<Renderer>().enabled = false;
+                //Debug.DrawLine(targetSrcPos, targetDstPos, uniqueColor.Blink());
+                //Debug.DrawLine(targetDstPos, parentTip.position + parentTip.transform.TransformVector(localTipOfs), Color.white);
             }
 
             if (body.isKinematic == false)
             {
-                var tipToDst = (targetDstPos - parentTip.position);
-                cube.transform.position = parentTip.position + tipToDst * 0.5f;
-                cube.transform.localScale = new Vector3(0.1f, tipToDst.SafeMagnitude(), 0.1f);
-                cube.transform.rotation = Quaternion.LookRotation(tipToDst.SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
+                cube.position = targetCenterPos;
+                cube.rotation = Quaternion.LookRotation((targetCenterPos - parentTip.position).SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
+                cube.localScale = new Vector3(0.1f, (targetCenterPos - parentTip.position).SafeMagnitude() * 2.0f, 0.1f);
 
-                //cube.transform.position = bodyParent.position + targetCenterPos;
-                //cube.transform.localScale = new Vector3(0.1f, targetSrcToDst.SafeMagnitude(), 0.1f);
-                //cube.transform.rotation = Quaternion.LookRotation(targetSrcToDst.SafeNormalize(), Vector3.up) * Quaternion.Euler(-90.0f, 0.0f, 0.0f);
+                var tipToTarget = (targetDstPos - parentTip.position);
+                cube.position = parentTip.position + tipToTarget * 0.5f;
+                cube.rotation = Quaternion.LookRotation(tipToTarget.SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
+                cube.localScale = new Vector3(0.1f, tipToTarget.SafeMagnitude(), 0.1f);
+
+                //selfTip.position = targetDstPos; ;
+                //cube.position = parentTip.position + (selfTip.position - parentTip.position);
+                //cube.rotation = Quaternion.LookRotation((selfTip.position - parentTip.position).SafeNormalize(), Vector3.up);
+                //cube.localScale = new Vector3(0.1f, (selfTip.position - parentTip.position).SafeMagnitude(), 0.1f);
             }
-
-            //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.forward * 0.7f, Color.blue + Color.white * 0.5f);
-            //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.right * 0.7f, Color.red + Color.white * 0.5f);
-            //Debug.DrawLine(transform.position, transform.position + targetRot * Vector3.up * 0.7f, Color.green + Color.white * 0.5f);
-
-            //Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.forward, Color.blue);
-            //Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.right, Color.red);
-            //Debug.DrawLine(transform.position, transform.position + bodyParent.rotation * Vector3.up, Color.green);
 
             //axis.transform.position = targetPos;
             //axis.transform.rotation = targetRot;
 
             // testing
-            //body.MovePosition(bodyParent.position + bodyParent.rotation * ofs);
+            //body.MovePosition(targetCenterPos);
             //body.MoveRotation(targetRot);
+            //yield return new WaitForFixedUpdate();
+            //continue;
 
             var dt = Time.fixedDeltaTime;
 
-            var moveOfs = targetSrcPos - bodyPos;
+            var moveOfs = targetCenterPos - bodyPos;
             var moveDir = moveOfs.SafeNormalize();
             var moveLen = moveOfs.SafeMagnitude();
 
@@ -181,8 +194,8 @@ public class Bonsai4
             body.AddForce(moveForce, ForceMode.Force);
 
             // TODO: wrong
-            var contractForce = (body.position - targetSrcPos) * settings.ContractForce;
-            body.AddForce(contractForce, ForceMode.Force);
+            //var contractForce = (body.position - targetSrcPos) * settings.ContractForce;
+            //body.AddForce(contractForce, ForceMode.Force);
 
             var torque = Vector3.zero;
 
