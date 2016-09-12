@@ -102,19 +102,9 @@ public class Bonsai4
         var parentTip = bodyParent.transform.FindChild("Cube/Tip");
         var selfTip = transform.FindChild("Cube/Tip");
 
-        // ok we need to get the local attach point and stick the cube to it always
-        // remember the object is moved to the ideal ofs
-        // and rotated to ideal rot, independent (will be detached)
-        // then we make the cube point from the local attach point, to the center? or the tip
-
-        // so we need the pos relative to the TIP, because we're always attached relative to a tip
-        // no we arent, because childs will be weird; but relative to tip is still always correct?
-
         var attachTipOfs = attachSrc - parentTip.position;
         var localAttachSrc = bodyParent.transform.InverseTransformPoint(attachSrc);
         var localAttachDst = bodyParent.transform.InverseTransformPoint(attachDst);
-
-        Debug.DrawLine(transform.position, attachSrc, Color.red, 5.0f);
 
         if (body.isKinematic == false)
         {
@@ -154,14 +144,10 @@ public class Bonsai4
             {
                 var tipAttachPoint = parentTip.position + parentTip.rotation * attachTipOfs;
                 var tipToTarget = (targetDstPos - tipAttachPoint);
+
                 cube.position = tipAttachPoint + tipToTarget * 0.5f;
                 cube.rotation = Quaternion.LookRotation(tipToTarget.SafeNormalize(), Vector3.up) * Quaternion.Euler(90.0f, 0.0f, 0.0f);
                 cube.localScale = new Vector3(0.1f, tipToTarget.SafeMagnitude(), 0.1f);
-
-                //selfTip.position = targetDstPos; ;
-                //cube.position = parentTip.position + (selfTip.position - parentTip.position);
-                //cube.rotation = Quaternion.LookRotation((selfTip.position - parentTip.position).SafeNormalize(), Vector3.up);
-                //cube.localScale = new Vector3(0.1f, (selfTip.position - parentTip.position).SafeMagnitude(), 0.1f);
             }
 
             //axis.transform.position = targetPos;
