@@ -92,8 +92,8 @@ public class Bonsai4
         //var ofsEulerZ = Mathf.DeltaAngle(rotOfsSrcEuler.z, rotOfsDstEuler.z);
         //Debug.LogFormat("parent: {0}, x:{1},y:{2},z:{3}", parent.name, (int)ofsEulerX, (int)ofsEulerY, (int)ofsEulerZ);
 
-        var axis = AxisHelper.Create();
-        axis.transform.localScale = Vector3.one * 1.25f;
+        //var axis = AxisHelper.Create();
+        //axis.transform.localScale = Vector3.one * 1.25f;
 
         body.MovePosition(attachSrc + attachOfs.SafeNormalize() * attachOfs.SafeMagnitude() * 1.0f);
         body.MoveRotation(bodyParent.rotation * baseRotOfs);
