@@ -181,10 +181,17 @@ public class SimulatedHand
         var settingsDst = Bonsai4Settings.Get("Bonsai4SettingsDst");
         var settings = Bonsai4Settings.Lerp(settingsSrc, settingsDst, settingsT);
 
-        var branch = Bonsai4.MakeBranch(settings);
-
         var branchSrc = nearestPoint;
         var branchDst = shadow.transform.position;
+
+        var branchSrcDstDist = (branchDst - branchSrc).SafeMagnitude();
+        if (branchSrcDstDist < 0.1f)
+        {
+            Destroy(pullObj);
+            yield break;
+        }
+
+        var branch = Bonsai4.MakeBranch(settings);
 
         branch.depth = branchDepth;
 
@@ -194,14 +201,6 @@ public class SimulatedHand
         branch.StartCoroutine(branch.DoAttachment(nearestBranch.gameObject, branchSrc, branchDst));
 
         Destroy(pullObj);
-
-        while (true)
-        {
-            Debug.DrawLine(branchSrc, branchDst, Color.blue);
-            //Debug.DrawLine(shadow.transform.position, nearestPoint, Color.red);
-            //Debug.DrawLine(shadow.transform.position, branchDst, Color.green);
-            yield return null;
-        }
     }
 
     public IEnumerator DoPunchRay()
